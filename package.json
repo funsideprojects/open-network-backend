@@ -1,0 +1,50 @@
+{
+  "name": "social-network-backend",
+  "version": "1.0.0",
+  "private": true,
+  "main": "build/index.js",
+  "scripts": {
+    "clear:console": "node utils/clearConsole.js",
+    "dev": "nodemon -q",
+    "build": "tsc",
+    "postbuild": "ncp src/schema build/schema --stopOnErr",
+    "lint": "tslint -p . -c tslint.json --fix"
+  },
+  "dependencies": {
+    "apollo-server": "^2.11.0",
+    "apollo-server-express": "^2.11.0",
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^1.20.0",
+    "cors": "^2.8.5",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "graphql": "^14.6.0",
+    "graphql-resolvers": "^0.4.2",
+    "graphql-tools": "^4.0.7",
+    "jsonwebtoken": "^8.5.1",
+    "merge-graphql-schemas": "^1.7.6",
+    "mongoose": "^5.9.4",
+    "nodemailer": "^6.4.5",
+    "subscriptions-transport-ws": "^0.9.16",
+    "uuid": "^7.0.2"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.2",
+    "@types/chalk": "^2.2.0",
+    "@types/cors": "^2.8.6",
+    "@types/jsonwebtoken": "^8.3.8",
+    "@types/mongodb": "^3.5.2",
+    "@types/mongoose": "^5.7.6",
+    "@types/node": "^13.9.1",
+    "@types/nodemailer": "^6.4.0",
+    "@types/uuid": "^7.0.0",
+    "chalk": "^3.0.0",
+    "ncp": "^2.0.0",
+    "nodemon": "^2.0.2",
+    "prettier": "^1.19.1",
+    "ts-node": "^8.6.2",
+    "tslint": "^6.1.0",
+    "tslint-plugin-prettier": "^2.1.0",
+    "typescript": "3.8.3"
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "defaultSeverity": "warning",
+  "extends": ["tslint:recommended", "tslint-plugin-prettier"],
+  "rulesDirectory": [],
+  "rules": {
+    "prettier": [
+      true,
+      "../.prettierrc",
+      {
+        "editorconfig": false
+      }
+    ],
+    "ordered-imports": [false],
+    "member-ordering": [false],
+    "curly": [true, "as-needed"],
+    "interface-name": [true, "always-prefix"],
+    "array-type": [true, "generic"],
+    "member-access": [true, "no-public"],
+    "no-empty-interface": true,
+    "no-empty": true,
+    "object-literal-sort-keys": false,
+    "no-unused-expression": true,
+    "max-classes-per-file": [true, 1],
+    "variable-name": {
+      "options": [
+        "require-const-for-all-caps",
+        "allow-leading-underscore",
+        "allow-pascal-case",
+        "check-format",
+        "ban-keywords"
+      ]
+    },
+    "one-line": [true, "check-catch", "check-finally", "check-else"],
+    "one-variable-per-declaration": true,
+    "no-string-literal": true,
+    "no-console": [true, "warn", "error"],
+    "no-string-throw": true,
+    "object-literal-key-quotes": [true, "as-needed"],
+    "newline-before-return": true,
+
+    "align": [true, "parameters", "statements"],
+    "arrow-parens": [true, "ban-single-arg-parens"],
+    "eofline": true,
+    "import-spacing": true,
+    "indent": [true, "spaces", 2],
+    "jsdoc-format": true,
+    "max-line-length": [
+      true,
+      {
+        "limit": 100,
+        "ignore-pattern": "^import |^export {(.*?)}",
+        "check-regex": true
+      }
+    ],
+    "new-parens": true,
+    "no-consecutive-blank-lines": true,
+    "no-irregular-whitespace": true,
+    "no-trailing-whitespace": true,
+    "quotemark": [true, "single"],
+    "semicolon": false,
+    "trailing-comma": false
+  },
+  "jsRules": {
+    "no-unused-expression": true
+  },
+  "linterOptions": {
+    "exclude": ["node_modules/**/*.ts"]
+  }
+}
