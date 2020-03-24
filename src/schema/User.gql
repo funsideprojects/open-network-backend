@@ -74,17 +74,12 @@ type UserPayload {
   fullName:                   String
   email:                      String
   username:                   String
-  password:                   String
   image:                      String
   imagePublicId:              String
   coverImage:                 String
   coverImagePublicId:         String
   isOnline:                   Boolean
   lastActiveAt:               String
-
-  # newNotifications:          [NotificationPayload]
-  # newConversations:          [ConversationsPayload]
-  # unseenMessage:              Boolean
 
   createdAt:                  String
   updatedAt:                  String
@@ -105,9 +100,6 @@ type IsUserOnlinePayload {
 # Queries
 # ---------------------------------------------------------
 type Query {
-  # Verifies reset password token
-  verifyResetPasswordToken(email: String, token: String!):  SuccessMessage
-
   # Gets the currently logged in user
   getAuthUser:                                              UserPayload
 
@@ -122,6 +114,9 @@ type Query {
 
   # Gets Suggested people for authUser
   suggestPeople:                                           [UserPayload]
+
+  # Verifies reset password token
+  verifyResetPasswordToken(email: String, token: String!):  SuccessMessage
 }
 
 # ---------------------------------------------------------

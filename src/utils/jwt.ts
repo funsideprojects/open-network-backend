@@ -46,5 +46,3 @@ export function checkAuthorization(token: string): Promise<IDecodedToken | null>
     }
   })
 }
-
-console.log('x')

@@ -6,12 +6,12 @@ export interface IUser extends Document {
   email: string
   username: string
   password: string
-  passwordResetToken: string
-  passwordResetTokenExpiry: Date
-  image: string
-  imagePublicId: string
-  coverImage: string
-  coverImagePublicId: string
+  passwordResetToken?: string
+  passwordResetTokenExpiry?: number
+  image?: string
+  imagePublicId?: string
+  coverImage?: string
+  coverImagePublicId?: string
   isOnline: boolean
   lastActiveAt: string
 }
@@ -44,7 +44,7 @@ const userSchema = new Schema(
       required: true
     },
     passwordResetToken: String,
-    passwordResetTokenExpiry: Date,
+    passwordResetTokenExpiry: Number,
     image: String,
     imagePublicId: String,
     coverImage: String,
@@ -63,7 +63,7 @@ const userSchema = new Schema(
 /**
  * Hashes the users password when saving it to DB
  */
-userSchema.pre('save', function(next) {
+userSchema.pre('save', function (next) {
   if (!this.isModified('password')) return next()
 
   genSalt(10, (genSaltErr, salt) => {

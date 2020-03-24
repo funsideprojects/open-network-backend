@@ -21,18 +21,13 @@
     "allowJs": true,
     "outDir": "./build",
     "baseUrl": "./src",
-    "paths": {
-      "@utils/*": [
-        "./utils/*"
-      ]
-    }
+    "paths": {}
   },
   "include": [
     "src/**/*"
   ],
   "exclude": [
     "node_modules",
-    "src/**/*.gql",
-    "src/resolvers"
+    "src/**/*.gql"
   ]
 }
