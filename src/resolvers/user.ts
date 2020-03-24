@@ -4,7 +4,7 @@ import { withFilter } from 'apollo-server'
 // import { combineResolvers } from 'graphql-resolvers'
 
 import { IS_USER_ONLINE } from '../constants/Subscriptions'
-import { uploadToCloudinary } from '../utils/cloudinary'
+import { uploadToCloudinary } from 'utils/cloudinary'
 import { generateToken } from '../utils/jwt'
 import { sendEmail } from '../utils/email'
 import { pubSub } from '../utils/apollo-server'

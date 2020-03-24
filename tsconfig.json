@@ -19,7 +19,13 @@
     "experimentalDecorators": true,
     "sourceMap": false,
     "allowJs": true,
-    "outDir": "./build"
+    "outDir": "./build",
+    "baseUrl": "./src",
+    "paths": {
+      "@utils/*": [
+        "./utils/*"
+      ]
+    }
   },
   "include": [
     "src/**/*"
