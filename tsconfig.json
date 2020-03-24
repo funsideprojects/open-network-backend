@@ -26,6 +26,7 @@
   ],
   "exclude": [
     "node_modules",
-    "src/**/*.graphql"
+    "src/**/*.gql",
+    "src/resolvers"
   ]
 }
