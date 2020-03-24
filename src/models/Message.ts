@@ -2,10 +2,10 @@ import { Document, Schema, model } from 'mongoose'
 import { ObjectId } from 'mongodb'
 
 export interface IMessage extends Document {
-  sender: ObjectId
-  receiver: ObjectId
+  senderId: ObjectId
+  receiverId: ObjectId
   message: string
-  seen: boolean
+  seen: Array<ObjectId>
 }
 
 /**
@@ -13,19 +13,21 @@ export interface IMessage extends Document {
  */
 const messageSchema = new Schema(
   {
-    sender: {
+    senderId: {
       type: Schema.Types.ObjectId,
       ref: 'User'
     },
-    receiver: {
+    receiverId: {
       type: Schema.Types.ObjectId,
       ref: 'User'
     },
     message: String,
-    seen: {
-      type: Boolean,
-      default: false
-    }
+    seen: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+      }
+    ]
   },
   {
     timestamps: true

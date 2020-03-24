@@ -2,8 +2,10 @@ import { Document, Schema, model } from 'mongoose'
 import { ObjectId } from 'mongodb'
 
 export interface ILike extends Document {
-  post: ObjectId
-  user: ObjectId
+  _id: {
+    postId: ObjectId
+    userId: ObjectId
+  }
 }
 
 /**
@@ -11,13 +13,15 @@ export interface ILike extends Document {
  */
 const likeSchema = new Schema(
   {
-    post: {
-      type: Schema.Types.ObjectId,
-      ref: 'Post'
-    },
-    user: {
-      type: Schema.Types.ObjectId,
-      ref: 'User'
+    _id: {
+      postId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Post'
+      },
+      userId: {
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+      }
     }
   },
   {

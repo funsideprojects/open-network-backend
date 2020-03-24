@@ -1,13 +1,15 @@
 import { compare } from 'bcryptjs'
 import { Types } from 'mongoose'
 import { withFilter } from 'apollo-server'
+// import { combineResolvers } from 'graphql-resolvers'
 
+import { IS_USER_ONLINE } from '../constants/Subscriptions'
 import { uploadToCloudinary } from '../utils/cloudinary'
 import { generateToken } from '../utils/jwt'
 import { sendEmail } from '../utils/email'
 import { pubSub } from '../utils/apollo-server'
 
-import { IS_USER_ONLINE } from '../constants/Subscriptions'
+// import { isAuthenticated } from './utils/authenticate'
 
 const AUTH_TOKEN_EXPIRY = '1y'
 const RESET_PASSWORD_TOKEN_EXPIRY = 1000 * 60 * 60
@@ -17,8 +19,6 @@ const Query = {
    * Gets the currently logged in user
    */
   getAuthUser: async (root, args, { authUser, Message, User }) => {
-    if (!authUser) return null
-
     // If user is authenticated, update it's isOnline field to true
     const user = await User.findOneAndUpdate({ email: authUser.email }, { isOnline: true })
       .populate({ path: 'posts', options: { sort: { createdAt: 'desc' } } })
@@ -70,7 +70,7 @@ const Query = {
 
     // Transform data
     const newConversations: Array<any> = []
-    lastUnseenMessages.map(u => {
+    lastUnseenMessages.map((u) => {
       const mUser = {
         id: u.sender[0]._id,
         username: u.sender[0].username,
@@ -193,7 +193,7 @@ const Query = {
     // Find user ids, that current user follows
     const userFollowing: Array<any> = []
     const follow = await Follow.find({ follower: userId }, { _id: 0 }).select('user')
-    follow.map(f => userFollowing.push(f.user))
+    follow.map((f) => userFollowing.push(f.user))
 
     // Find users that user is not following
     const query = {
@@ -242,7 +242,7 @@ const Query = {
     // Find who user follows
     const userFollowing: Array<any> = []
     const following = await Follow.find({ follower: userId }, { _id: 0 }).select('user')
-    following.map(f => userFollowing.push(f.user))
+    following.map((f) => userFollowing.push(f.user))
     userFollowing.push(userId)
 
     // Find random users
@@ -256,9 +256,7 @@ const Query = {
       if (random < 0) random = 0
     }
 
-    const randomUsers = await User.find(query)
-      .skip(random)
-      .limit(LIMIT)
+    const randomUsers = await User.find(query).skip(random).limit(LIMIT)
 
     return randomUsers
   },

@@ -13,7 +13,7 @@ import { createApolloServer } from './utils/apollo-server'
 
 // *_: Process events
 
-process.on('exit', code => {
+process.on('exit', (code) => {
   // Application specific logging, throwing an error, or other logic here
   console.log('Process exited with code: ', code)
 })
@@ -31,7 +31,7 @@ mongoose
       `${highlight(0, '✓')} Database connected (URL: ${highlight(0, process.env.MONGO_URL!)})`
     )
   })
-  .catch(err => {
+  .catch((err) => {
     console.log(highlight(3, `Database connection: ${err.message}`))
     process.exit(0)
   })

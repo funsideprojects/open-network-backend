@@ -1,27 +1,19 @@
 import { Document, Schema, model } from 'mongoose'
-import { ObjectId } from 'mongodb'
 import { genSalt, hash } from 'bcryptjs'
 
 export interface IUser extends Document {
   fullName: string
   email: string
   username: string
+  password: string
   passwordResetToken: string
   passwordResetTokenExpiry: Date
-  password: string
   image: string
   imagePublicId: string
   coverImage: string
   coverImagePublicId: string
   isOnline: boolean
-
-  posts: Array<ObjectId>
-  likes: Array<ObjectId>
-  comments: Array<ObjectId>
-  followers: Array<ObjectId>
-  following: Array<ObjectId>
-  notifications: Array<ObjectId>
-  messages: Array<ObjectId>
+  lastActiveAt: string
 }
 
 /**
@@ -47,12 +39,12 @@ const userSchema = new Schema(
       trim: true,
       unique: true
     },
-    passwordResetToken: String,
-    passwordResetTokenExpiry: Date,
     password: {
       type: String,
       required: true
     },
+    passwordResetToken: String,
+    passwordResetTokenExpiry: Date,
     image: String,
     imagePublicId: String,
     coverImage: String,
@@ -61,48 +53,7 @@ const userSchema = new Schema(
       type: Boolean,
       default: false
     },
-    posts: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'Post'
-      }
-    ],
-    likes: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'Like'
-      }
-    ],
-    comments: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'Comment'
-      }
-    ],
-    followers: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'Follow'
-      }
-    ],
-    following: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'Follow'
-      }
-    ],
-    notifications: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'Notification'
-      }
-    ],
-    messages: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'User'
-      }
-    ]
+    lastActiveAt: Date
   },
   {
     timestamps: true

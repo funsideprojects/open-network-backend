@@ -2,8 +2,10 @@ import { Document, Schema, model } from 'mongoose'
 import { ObjectId } from 'mongodb'
 
 export interface IFollow extends Document {
-  user: ObjectId
-  follower: ObjectId
+  _id: {
+    userId: ObjectId
+    followerId: ObjectId
+  }
 }
 
 /**
@@ -11,13 +13,15 @@ export interface IFollow extends Document {
  */
 const followSchema = new Schema(
   {
-    user: {
-      type: Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    follower: {
-      type: Schema.Types.ObjectId,
-      ref: 'User'
+    _id: {
+      userId: {
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      followerId: {
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+      }
     }
   },
   {

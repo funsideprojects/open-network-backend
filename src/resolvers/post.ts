@@ -62,7 +62,7 @@ const Query = {
       // Find user ids, that current user follows
       const userFollowing: Array<any> = []
       const follow = await Follow.find({ follower: userId }, { _id: 0 }).select('user')
-      follow.map(f => userFollowing.push(f.user))
+      follow.map((f) => userFollowing.push(f.user))
 
       // Find user posts and followed posts by using userFollowing ids array
       const query = {
@@ -195,14 +195,14 @@ const Mutation = {
       // Delete post likes from likes collection
       await Like.find({ post: post.id }).deleteMany()
       // Delete post likes from users collection
-      post.likes.map(async likeId => {
+      post.likes.map(async (likeId) => {
         await User.where({ likes: likeId }).update({ $pull: { likes: likeId } })
       })
 
       // Delete post comments from comments collection
       await Comment.find({ post: post.id }).deleteMany()
       // Delete comments from users collection
-      post.comments.map(async commentId => {
+      post.comments.map(async (commentId) => {
         await User.where({ comments: commentId }).update({
           $pull: { comments: commentId }
         })
@@ -211,7 +211,7 @@ const Mutation = {
       // Find user notification in users collection and remove them
       const userNotifications = await Notification.find({ post: post.id })
 
-      userNotifications.map(async notification => {
+      userNotifications.map(async (notification) => {
         await User.where({ notifications: notification.id }).update({
           $pull: { notifications: notification.id }
         })

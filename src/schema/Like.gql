@@ -1,31 +1,28 @@
 # ---------------------------------------------------------
 # Model Objects
 # ---------------------------------------------------------
-type Like {
-  id: ID!
-  post: ID
-  user: ID
-}
 
 # ---------------------------------------------------------
 # Input Objects
 # ---------------------------------------------------------
 input CreateLikeInput {
-  userId: ID!
-  postId: ID!
+  postId:       ID!
 }
 
 input DeleteLikeInput {
-  id: ID!
+  postId:       ID!
 }
 
 # ---------------------------------------------------------
 # Return Payloads
 # ---------------------------------------------------------
-type LikePayload {
-  id: ID!
-  post: PostPayload
-  user: UserPayload
+
+# ---------------------------------------------------------
+# Queries
+# ---------------------------------------------------------
+type Query {
+  # Gets likes made by authUser
+  getMyLikes(skip: Int, limit: Int):         [PostPayload]
 }
 
 # ---------------------------------------------------------
@@ -33,8 +30,12 @@ type LikePayload {
 # ---------------------------------------------------------
 type Mutation {
   # Creates a like for post
-  createLike(input: CreateLikeInput!): Like
+  createLike(input: CreateLikeInput!):       [String]
 
   # Deletes a post like
-  deleteLike(input: DeleteLikeInput!): Like
+  deleteLike(input: DeleteLikeInput!):        Boolean
 }
+
+# ---------------------------------------------------------
+# Subscriptions
+# ---------------------------------------------------------

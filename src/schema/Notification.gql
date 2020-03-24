@@ -7,86 +7,69 @@ enum NotificationType {
   COMMENT
 }
 
+enum NotificationOperationType {
+  CREATE
+  DELETE
+}
+
 type Notification {
-  id: ID!
-  user: User
-  author: User
-  post: ID!
-  like: Like
-  follow: Follow
-  comment: Comment
-  type: NotificationType
-  seen: Boolean
-  createdAt: String
+  id:                 ID!
+  type:               NotificationType
+  relativeData:       String
+  authorId:           ID!
+  seen:               Boolean
+
+  createdAt:          String
 }
 
 # ---------------------------------------------------------
 # Input Objects
 # ---------------------------------------------------------
-input CreateNotificationInput {
-  userId: ID!
-  authorId: ID!
-  postId: ID
-  notificationType: NotificationType!
-  notificationTypeId: ID
-}
 
 input DeleteNotificationInput {
-  id: ID!
-}
-
-input UpdateNotificationSeenInput {
-  userId: ID!
+  id:                 ID!
 }
 
 # ---------------------------------------------------------
 # Return Payloads
 # ---------------------------------------------------------
 type NotificationPayload {
-  id: ID
-  user: UserPayload
-  author: UserPayload
-  like: LikePayload
-  follow: Follow
-  comment: CommentPayload
-  createdAt: String
+  id:                 ID
+  type:               NotificationType
+  relativeData:       String
+  authorId:           ID
+  author:             UserPayload
+
+  createdAt:          String
 }
 
 type NotificationsPayload {
-  count: String!
-  notifications: [NotificationPayload]!
-}
-
-enum NotificationOperationType {
-  CREATE
-  DELETE
+  count:              Int!
+  notifications:     [NotificationPayload]!
 }
 
 type NotificationCreatedOrDeletedPayload {
-  operation: NotificationOperationType!
-  notification: NotificationPayload
+  operation:          NotificationOperationType!
+  notification:       NotificationPayload
 }
 
 # ---------------------------------------------------------
 # Queries
 # ---------------------------------------------------------
 type Query {
-  # Gets notifications for specific user
-  getUserNotifications(userId: ID!, skip: Int, limit: Int): NotificationsPayload
+  # Gets notifications for authUser
+  getMyNotifications(skip: Int, limit: Int):            NotificationsPayload
 }
 
 # ---------------------------------------------------------
 # Mutations
 # ---------------------------------------------------------
 type Mutation {
-  # Creates a new notification for user
-  createNotification(input: CreateNotificationInput!): Notification
+  # Updates notification seen values for user
+  updateNotificationSeen:                                 Boolean
 
   # Deletes a notification
-  deleteNotification(input: DeleteNotificationInput!): Notification
-
-  # Updates notification seen values for user
-  updateNotificationSeen(input: UpdateNotificationSeenInput!): Boolean
+  deleteNotification(input: DeleteNotificationInput!):    Boolean
 }
 
 # ---------------------------------------------------------
@@ -94,5 +77,5 @@ type Mutation {
 # ---------------------------------------------------------
 type Subscription {
   # Subscribes to notification created or deleted event
-  notificationCreatedOrDeleted: NotificationCreatedOrDeletedPayload
+  notificationCreatedOrDeleted:                           NotificationCreatedOrDeletedPayload
 }

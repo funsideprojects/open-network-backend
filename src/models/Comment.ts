@@ -3,8 +3,8 @@ import { ObjectId } from 'mongodb'
 
 export interface IComment extends Document {
   comment: string
-  post: ObjectId
-  author: ObjectId
+  postId: ObjectId
+  authorId: ObjectId
 }
 
 /**
@@ -16,11 +16,11 @@ const commentSchema = new Schema(
       type: String,
       required: true
     },
-    post: {
+    postId: {
       type: Schema.Types.ObjectId,
       ref: 'Post'
     },
-    author: {
+    authorId: {
       type: Schema.Types.ObjectId,
       ref: 'User'
     }

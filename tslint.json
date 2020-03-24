@@ -1,11 +1,11 @@
 {
-  "defaultSeverity": "warning",
+  "defaultSeverity": "error",
   "extends": ["tslint:recommended", "tslint-plugin-prettier"],
   "rulesDirectory": [],
   "rules": {
     "prettier": [
       true,
-      "../.prettierrc",
+      ".prettierrc",
       {
         "editorconfig": false
       }
@@ -39,7 +39,7 @@
     "newline-before-return": true,
 
     "align": [true, "parameters", "statements"],
-    "arrow-parens": [true, "ban-single-arg-parens"],
+    "arrow-parens": true,
     "eofline": true,
     "import-spacing": true,
     "indent": [true, "spaces", 2],

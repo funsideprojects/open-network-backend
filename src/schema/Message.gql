@@ -2,62 +2,64 @@
 # Model Objects
 # ---------------------------------------------------------
 type Message {
-  id: ID!
-  sender: User!
-  receiver: User!
-  message: String!
-  createdAt: String
-  updateAt: String
+  id:               ID!
+  senderId:         ID!
+  receiverId:       ID!
+  message:          String!
+  seen:            [String]
+
+  createdAt:        String
+  updatedAt:        String
 }
 
 # ---------------------------------------------------------
 # Input Objects
 # ---------------------------------------------------------
 input CreateMessageInput {
-  sender: ID!
-  receiver: ID!
-  message: String!
+  receiverId:       ID!
+  message:          String!
 }
 
 input UpdateMessageSeenInput {
-  sender: ID
-  receiver: ID!
+  withUserId:       ID!
 }
 
 # ---------------------------------------------------------
 # Return Payloads
 # ---------------------------------------------------------
 type MessagePayload {
-  id: ID!
-  receiver: UserPayload
-  sender: UserPayload
-  message: String
-  seen: Boolean
-  createdAt: String
-  isFirstMessage: Boolean
+  id:               ID
+  receiverId:       ID
+  receiver:         UserPayload
+  senderId:         ID
+  sender:           UserPayload
+  message:          String
+  seen:            [UserPayload]
+
+  createdAt:        String
+  updatedAt:        String
+  isFirstMessage:   Boolean
 }
 
 type ConversationsPayload {
-  id: ID!
-  username: String
-  fullName: String
-  image: String
-  isOnline: Boolean
-  seen: Boolean
-  lastMessage: String
-  lastMessageSender: Boolean
-  lastMessageCreatedAt: String
+  id:               ID
+  username:         String
+  fullName:         String
+  image:            String
+  isOnline:         Boolean
+
+  lastMessage:      MessagePayload
 }
 
 # ---------------------------------------------------------
 # Queries
 # ---------------------------------------------------------
 type Query {
-  # Gets user's messages
-  getMessages(authUserId: ID!, userId: ID!): [MessagePayload]
+  # Gets authUser's messages
+  getMessages(withUserId: ID!):                [MessagePayload]
 
-  # Gets user's conversations
-  getConversations(authUserId: ID!): [ConversationsPayload]
+  # Gets authUser's conversations
+  getConversations:                            [ConversationsPayload]
 }
 
 # ---------------------------------------------------------
@@ -65,10 +67,10 @@ type Query {
 # ---------------------------------------------------------
 type Mutation {
   # Creates a message
-  createMessage(input: CreateMessageInput!): MessagePayload
+  createMessage(input: CreateMessageInput!):            MessagePayload
 
   # Updates message seen values for user
-  updateMessageSeen(input: UpdateMessageSeenInput!): Boolean
+  updateMessageSeen(input: UpdateMessageSeenInput!):    Boolean
 }
 
 # ---------------------------------------------------------
@@ -76,8 +78,8 @@ type Mutation {
 # ---------------------------------------------------------
 type Subscription {
   # Subscribes to message created event
-  messageCreated(authUserId: ID!, userId: ID!): MessagePayload
+  messageCreated(withUserId: ID!):              MessagePayload
 
   # Subscribes to new conversation event
-  newConversation: ConversationsPayload
+  newConversation:                              ConversationsPayload
 }

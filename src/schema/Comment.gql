@@ -2,35 +2,53 @@
 # Model Objects
 # ---------------------------------------------------------
 type Comment {
-  id: ID!
-  comment: String!
-  author: ID
-  post: ID
-  createdAt: String
+  id:               ID!
+  comment:          String
+  postId:           ID!
+  authorId:         ID!
+
+  createdAt:        String
+  updatedAt:        String
 }
 
 # ---------------------------------------------------------
 # Input Objects
 # ---------------------------------------------------------
 input CreateCommentInput {
-  comment: String!
-  author: ID!
-  postId: ID!
+  comment:          String!
+  postId:           ID!
+}
+
+input UpdateCommentInput {
+  id:               ID!
+  comment:          String!
 }
 
 input DeleteCommentInput {
-  id: ID!
+  id:               ID!
 }
 
 # ---------------------------------------------------------
 # Return Payloads
 # ---------------------------------------------------------
 type CommentPayload {
-  id: ID
-  comment: String
-  author: UserPayload
-  post: PostPayload
-  createdAt: String
+  id:               ID
+  comment:          String
+  postId:           ID
+  post:             PostPayload
+  authorId:         ID
+  author:           UserPayload
+
+  createdAt:        String
+  updatedAt:        String
+}
+
+# ---------------------------------------------------------
+# Queries
+# ---------------------------------------------------------
+type Query {
+  # Gets comments made by authUser
+  getMyComments(skip: Int, limit: Int):          [CommentPayload]
 }
 
 # ---------------------------------------------------------
@@ -38,8 +56,15 @@ type CommentPayload {
 # ---------------------------------------------------------
 type Mutation {
   # Creates a post comment
-  createComment(input: CreateCommentInput!): Comment
+  createComment(input: CreateCommentInput!):      CommentPayload
+
+  # Updates a post comment
+  updateComment(input: UpdateCommentInput!):      CommentPayload
 
   # Deletes a post comment
-  deleteComment(input: DeleteCommentInput!): Comment
+  deleteComment(input: DeleteCommentInput!):      Boolean
 }
+
+# ---------------------------------------------------------
+# Subscriptions
+# ---------------------------------------------------------

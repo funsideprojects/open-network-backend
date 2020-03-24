@@ -11,6 +11,10 @@ export interface IContext extends IModels {
   authUser: IDecodedToken
 }
 
+export interface ISubscriptionContext {
+  authUser: IDecodedToken
+}
+
 // *_: Export pubSub instance for publishing events
 export const pubSub = new PubSub()
 
@@ -56,7 +60,7 @@ export function createApolloServer(typeDefs, resolvers, models: IModels) {
       },
       onDisconnect: async (_webSocket, context) => {
         // *: Get socket's context
-        const subscriptionContext = await context.initPromise
+        const subscriptionContext: ISubscriptionContext = await context.initPromise
         if (subscriptionContext && subscriptionContext.authUser) {
           // *: Publish user isOnline false
           pubSub.publish(IS_USER_ONLINE, {

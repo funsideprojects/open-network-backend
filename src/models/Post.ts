@@ -5,9 +5,8 @@ export interface IPost extends Document {
   title: string
   image: string
   imagePublicId: string
-  author: ObjectId
-  likes: Array<ObjectId>
-  comments: Array<ObjectId>
+  authorId: ObjectId
+  private: boolean
 }
 
 /**
@@ -18,22 +17,14 @@ const postSchema = new Schema(
     title: String,
     image: String,
     imagePublicId: String,
-    author: {
+    authorId: {
       type: Schema.Types.ObjectId,
       ref: 'User'
     },
-    likes: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'Like'
-      }
-    ],
-    comments: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'Comment'
-      }
-    ]
+    private: {
+      type: Boolean,
+      required: true
+    }
   },
   {
     timestamps: true
