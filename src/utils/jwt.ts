@@ -3,6 +3,7 @@ import { sign, verify } from 'jsonwebtoken'
 // *_: Interface
 
 export interface IUserData {
+  username: string
   id: string
   fullName: string
   email: string
@@ -25,9 +26,9 @@ export interface IDecodedToken extends IUserData, IAdditionalFromJWT {}
  * @param {date} expiresIn
  */
 export function generateToken(user: IUserData, secret: string, expiresIn: string | number): string {
-  const { id, fullName, email } = user
+  const { id, fullName, email, username } = user
 
-  return sign({ id, fullName, email }, secret, { expiresIn })
+  return sign({ id, fullName, email, username }, secret, { expiresIn })
 }
 
 /**
@@ -35,14 +36,14 @@ export function generateToken(user: IUserData, secret: string, expiresIn: string
  *
  * @param {String} token - JWT token
  */
-export function checkAuthorization(token: string): Promise<IDecodedToken | null> {
+export function checkAuthorization(token: string): Promise<IDecodedToken | undefined> {
   return new Promise(async (resolve) => {
     try {
       const authUser = await verify(token, process.env.SECRET!)
 
       if (authUser) resolve(authUser as IDecodedToken)
     } catch (error) {
-      resolve(null)
+      resolve(undefined)
     }
   })
 }

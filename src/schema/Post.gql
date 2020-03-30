@@ -71,9 +71,6 @@ type Query {
   # Gets posts from authUser's followed users
   getFollowedPosts(skip: Int, limit: Int):                      PostsPayload
 
-  # Gets all posts for authUser
-  getMyPosts(skip: Int, limit: Int):                            PostsPayload
-
   # Gets post by id
   getPost(id: ID!):                                             PostPayload
 }

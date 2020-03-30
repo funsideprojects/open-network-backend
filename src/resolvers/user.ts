@@ -1,7 +1,10 @@
 import { compare } from 'bcryptjs'
-import { Types } from 'mongoose'
 import { withFilter } from 'apollo-server'
 import { combineResolvers } from 'graphql-resolvers'
+import { sync as mkdirSync } from 'mkdirp'
+import { createWriteStream, unlinkSync } from 'fs'
+import { extname } from 'path'
+import { v4 } from 'uuid'
 
 import { IS_USER_ONLINE } from 'constants/Subscriptions'
 import { uploadToCloudinary, generateToken, sendEmail, pubSub, IContext } from 'utils'
@@ -9,244 +12,158 @@ import { uploadToCloudinary, generateToken, sendEmail, pubSub, IContext } from '
 // import { getRequestedFieldsFromInfo } from './functions'
 import { isAuthenticated } from './high-order-resolvers'
 
+const UPLOAD_DIR = process.env.UPLOAD_DIR ?? './uploads'
+
 const AUTH_TOKEN_EXPIRY = '1y'
 const RESET_PASSWORD_TOKEN_EXPIRY = 1000 * 60 * 60
 
 const Query = {
-  /**
-   * Gets the currently logged in user
-   */
+  // DONE:
   getAuthUser: combineResolvers(
     isAuthenticated,
     async (root, args, { authUser, User }: IContext, info) => {
       // const requestedFields = getRequestedFieldsFromInfo(info)
-      // If user is authenticated, update it's isOnline field to true
-      const userFound = await User.findOneAndUpdate({ email: authUser.email }, { isOnline: true })
 
-      return userFound
+      return await User.findOne({ email: authUser.email }, { isOnline: true })
     }
   ),
-  /**
-   * Gets user by username
-   *
-   * @param {string} username
-   */
-  getUser: async (root, { username, id }, { User }) => {
-    if (!username && !id) throw new Error('username or id is required params.')
 
+  // DONE:
+  getUser: async (root, { username, id }, { User }: IContext) => {
+    if (!username && !id) throw new Error('username or id is required params.')
     if (username && id) throw new Error('please pass only username or only id as a param')
 
-    const query = username ? { username } : { _id: id }
-    const user = await User.findOne(query)
-      .populate({
-        path: 'posts',
-        populate: [
-          {
-            path: 'author',
-            populate: [
-              { path: 'followers' },
-              { path: 'following' },
-              {
-                path: 'notifications',
-                populate: [
-                  { path: 'author' },
-                  { path: 'follow' },
-                  { path: 'like' },
-                  { path: 'comment' }
-                ]
-              }
-            ]
-          },
-          { path: 'comments', populate: { path: 'author' } },
-          { path: 'likes' }
-        ],
-        options: { sort: { createdAt: 'desc' } }
-      })
-      .populate('likes')
-      .populate('followers')
-      .populate('following')
-      .populate({
-        path: 'notifications',
-        populate: [{ path: 'author' }, { path: 'follow' }, { path: 'like' }, { path: 'comment' }]
-      })
+    const userFound = await User.findOne({ ...(username ? { username } : { _id: id }) })
 
-    if (!user) throw new Error(`User with given params doesn't exists.`)
+    if (!userFound) throw new Error(`User with given params doesn't exists.`)
 
-    return user
+    return userFound
   },
-  /**
-   * Gets user posts by username
-   *
-   * @param {string} username
-   * @param {int} skip how many posts to skip
-   * @param {int} limit how many posts to limit
-   */
-  getUserPosts: async (root, { username, skip, limit }, { User, Post }) => {
-    const user = await User.findOne({ username }).select('_id')
 
-    const query = { author: user._id }
-    const count = await Post.find(query).countDocuments()
-    const posts = await Post.find(query)
-      .populate({
-        path: 'author',
-        populate: [
-          { path: 'following' },
-          { path: 'followers' },
-          {
-            path: 'notifications',
-            populate: [
-              { path: 'author' },
-              { path: 'follow' },
-              { path: 'like' },
-              { path: 'comment' }
-            ]
-          }
+  // // TODO:
+  // getUserPosts: async (root, { username, skip, limit }, { User, Post }: IContext) => {
+  //   const user = await User.findOne({ username }).select('_id')
+
+  //   const query = { author: user!._id }
+  //   const count = await Post.find(query).countDocuments()
+  //   const posts = await Post.find(query)
+  //     .populate({
+  //       path: 'author',
+  //       populate: [
+  //         { path: 'following' },
+  //         { path: 'followers' },
+  //         {
+  //           path: 'notifications',
+  //           populate: [
+  //             { path: 'author' },
+  //             { path: 'follow' },
+  //             { path: 'like' },
+  //             { path: 'comment' }
+  //           ]
+  //         }
+  //       ]
+  //     })
+  //     .populate('likes')
+  //     .populate({
+  //       path: 'comments',
+  //       options: { sort: { createdAt: 'desc' } },
+  //       populate: { path: 'author' }
+  //     })
+  //     .skip(skip)
+  //     .limit(limit)
+  //     .sort({ createdAt: 'desc' })
+
+  //   return { posts, count }
+  // },
+
+  // DONE:
+  getUsers: combineResolvers(
+    isAuthenticated,
+    async (root, { skip, limit }, { authUser, User, Follow }: IContext) => {
+      // Find user ids, that authUser follows
+      const currentFollowing = await Follow.find({ '_id.followerId': authUser.id })
+
+      // Find users that user is not following
+      const query = {
+        $and: [
+          { _id: { $ne: authUser.id } },
+          { _id: { $nin: currentFollowing.map(({ _id }) => _id.userId) } }
         ]
-      })
-      .populate('likes')
-      .populate({
-        path: 'comments',
-        options: { sort: { createdAt: 'desc' } },
-        populate: { path: 'author' }
-      })
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: 'desc' })
-
-    return { posts, count }
-  },
-  /**
-   * Gets all users
-   *
-   * @param {string} userId
-   * @param {int} skip how many users to skip
-   * @param {int} limit how many users to limit
-   */
-  getUsers: async (root, { userId, skip, limit }, { User, Follow }) => {
-    // Find user ids, that current user follows
-    const userFollowing: Array<any> = []
-    const follow = await Follow.find({ follower: userId }, { _id: 0 }).select('user')
-    follow.map((f) => userFollowing.push(f.user))
-
-    // Find users that user is not following
-    const query = {
-      $and: [{ _id: { $ne: userId } }, { _id: { $nin: userFollowing } }]
-    }
-    const count = await User.where(query).countDocuments()
-    const users = await User.find(query)
-      .populate('followers')
-      .populate('following')
-      .populate({
-        path: 'notifications',
-        populate: [{ path: 'author' }, { path: 'follow' }, { path: 'like' }, { path: 'comment' }]
-      })
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: 'desc' })
-
-    return { users, count }
-  },
-  /**
-   * Searches users by username or fullName
-   *
-   * @param {string} searchQuery
-   */
-  searchUsers: async (root, { searchQuery }, { User, authUser }) => {
-    // Return an empty array if searchQuery isn't presented
-    if (!searchQuery) return []
-
-    const users = User.find({
-      $or: [{ username: new RegExp(searchQuery, 'i') }, { fullName: new RegExp(searchQuery, 'i') }],
-      _id: {
-        $ne: authUser.id
       }
-    }).limit(50)
+      const count = await User.countDocuments(query)
+      const users = await User.find(query).skip(skip).limit(limit).sort({ createdAt: 'desc' })
 
-    return users
-  },
-  /**
-   * Gets Suggested people for user
-   *
-   * @param {string} userId
-   */
-  suggestPeople: async (root, { userId }, { User, Follow }) => {
-    const LIMIT = 6
-
-    // Find who user follows
-    const userFollowing: Array<any> = []
-    const following = await Follow.find({ follower: userId }, { _id: 0 }).select('user')
-    following.map((f) => userFollowing.push(f.user))
-    userFollowing.push(userId)
-
-    // Find random users
-    const query = { _id: { $nin: userFollowing } }
-    const usersCount = await User.where(query).countDocuments()
-    let random = Math.floor(Math.random() * usersCount)
-
-    const usersLeft = usersCount - random
-    if (usersLeft < LIMIT) {
-      random = random - (LIMIT - usersLeft)
-      if (random < 0) random = 0
+      return { users, count }
     }
+  ),
 
-    const randomUsers = await User.find(query).skip(random).limit(LIMIT)
+  // DONE:
+  searchUsers: combineResolvers(
+    isAuthenticated,
+    async (root, { searchQuery }, { authUser, User }: IContext) => {
+      // Return an empty array if searchQuery isn't presented
+      if (!searchQuery) return []
 
-    return randomUsers
-  },
-  /**
-   * Verifies reset password token
-   *
-   * @param {string} email
-   * @param {string} token
-   */
-  verifyResetPasswordToken: async (root, { email, token }, { User }) => {
+      const users = User.find({
+        $or: [
+          { username: new RegExp(searchQuery, 'i') },
+          { fullName: new RegExp(searchQuery, 'i') }
+        ],
+        _id: {
+          $ne: authUser.id
+        }
+      }).limit(50)
+
+      return users
+    }
+  ),
+
+  // DONE:
+  suggestPeople: combineResolvers(
+    isAuthenticated,
+    async (root, { userId }, { authUser, User, Follow }: IContext) => {
+      const LIMIT = 6
+
+      // Find who user follows
+      const currentFollowing = await Follow.find({ '_id.followerId': authUser.id })
+
+      // Find random users
+      const query = { _id: { $nin: currentFollowing.map(({ _id }) => _id.userId) } }
+      const usersCount = await User.countDocuments(query)
+      /* tslint:disable-next-line */
+      let random = ~~(Math.random() * usersCount)
+
+      const usersLeft = usersCount - random
+      if (usersLeft < LIMIT) {
+        random = random - (LIMIT - usersLeft)
+        if (random < 0) random = 0
+      }
+
+      const randomUsers = await User.find(query).skip(random).limit(LIMIT)
+
+      return randomUsers
+    }
+  ),
+
+  // DONE:
+  verifyResetPasswordToken: async (root, { email, token }, { User }: IContext) => {
     // Check if user exists and token is valid
-    const user = await User.findOne({
+    const userFound = await User.findOne({
       email,
       passwordResetToken: token,
       passwordResetTokenExpiry: {
         $gte: Date.now() - RESET_PASSWORD_TOKEN_EXPIRY
       }
     })
-    if (!user) throw new Error('This token is either invalid or expired!')
+    if (!userFound) throw new Error('This token is either invalid or expired!')
 
     return { message: 'Success' }
   }
 }
 
+// *_:
 const Mutation = {
-  /**
-   * Signs in user
-   *
-   * @param {string} emailOrUsername
-   * @param {string} password
-   */
-  signin: async (root, { input: { emailOrUsername, password } }, { User }: IContext) => {
-    const userFound = await User.findOne({
-      $or: [{ email: emailOrUsername }, { username: emailOrUsername }]
-    })
-
-    if (!userFound) throw new Error('User not found.')
-
-    const isValidPassword = await compare(password, userFound.password)
-    if (!isValidPassword) throw new Error('Invalid password.')
-
-    return {
-      token: generateToken(
-        { id: userFound.id, email: userFound.email, fullName: userFound.fullName },
-        process.env.SECRET!,
-        AUTH_TOKEN_EXPIRY
-      )
-    }
-  },
-  /**
-   * Signs up user
-   *
-   * @param {string} fullName
-   * @param {string} email
-   * @param {string} username
-   * @param {string} password
-   */
+  // DONE:
   signup: async (root, { input: { fullName, email, username, password } }, { User }: IContext) => {
     // Check if user with given email or username already exists
     const userFound = await User.findOne({ $or: [{ email }, { username }] })
@@ -260,7 +177,7 @@ const Mutation = {
 
     // FullName validation
     if (fullName.length < 4 || fullName.length > 40)
-      throw new Error(`Full name length should between 4-40 characters.`)
+      throw new Error(`Full name length should be between 4-40 characters.`)
 
     // Email validation
     // tslint:disable-next-line
@@ -274,7 +191,7 @@ const Mutation = {
       throw new Error('Usernames can only use letters, numbers, underscores and periods.')
 
     if (username.length < 3 || username.length > 20)
-      throw new Error('Username length should between 3-50 characters.')
+      throw new Error('Username length should be between 3-50 characters.')
 
     // Username shouldn't equal to frontend route path
     const frontEndPages = [
@@ -301,17 +218,42 @@ const Mutation = {
 
     return {
       token: generateToken(
-        { id: newUser.id, email, fullName },
+        { id: newUser.id, email, username, fullName },
         process.env.SECRET!,
         AUTH_TOKEN_EXPIRY
       )
     }
   },
-  /**
-   * Requests reset password
-   *
-   * @param {string} email
-   */
+
+  // DONE:
+  signin: async (root, { input: { emailOrUsername, password } }, { User }: IContext) => {
+    const userFound = await User.findOne({
+      $or: [{ email: emailOrUsername }, { username: emailOrUsername }]
+    })
+
+    if (!userFound) throw new Error('User not found.')
+
+    const isValidPassword = await compare(password, userFound.password)
+    if (!isValidPassword) throw new Error('Invalid password.')
+
+    // If user is authenticated, update it's isOnline field to true
+    await User.findOneAndUpdate({ _id: userFound._id }, { $set: { isOnline: true } })
+
+    return {
+      token: generateToken(
+        {
+          id: userFound.id,
+          email: userFound.email,
+          username: userFound.username,
+          fullName: userFound.fullName
+        },
+        process.env.SECRET!,
+        AUTH_TOKEN_EXPIRY
+      )
+    }
+  },
+
+  // DONE:
   requestPasswordReset: async (root, { input: { email } }, { User }: IContext) => {
     // Check if user exists
     const userFound = await User.findOne({ email })
@@ -319,7 +261,7 @@ const Mutation = {
 
     // Set password reset token and it's expiry
     const passwordResetToken = generateToken(
-      { id: userFound.id, email, fullName: userFound.fullName },
+      { id: userFound.id, email, username: userFound.username, fullName: userFound.fullName },
       process.env.SECRET!,
       RESET_PASSWORD_TOKEN_EXPIRY
     )
@@ -345,13 +287,8 @@ const Mutation = {
       message: `A link to reset your password has been sent to ${email}`
     }
   },
-  /**
-   * Resets user password
-   *
-   * @param {string} email
-   * @param {string} token
-   * @param {string} password
-   */
+
+  // DONE:
   resetPassword: async (root, { input: { email, token, password } }, { User }: IContext) => {
     if (!password) throw new Error('Please enter password and Confirm password.')
 
@@ -380,54 +317,73 @@ const Mutation = {
     // Return success message
     return {
       token: generateToken(
-        { id: userFound.id, email, fullName: userFound.fullName },
+        { id: userFound.id, email, username: userFound.username, fullName: userFound.fullName },
         process.env.SECRET!,
         AUTH_TOKEN_EXPIRY
       )
     }
   },
-  /**
-   * Uploads user Profile or Cover photo
-   *
-   * @param {string} id
-   * @param {obj} image
-   * @param {string} imagePublicId
-   * @param {bool} isCover is Cover or Profile photo
-   */
-  uploadUserPhoto: combineResolvers(
+
+  // DONE:
+  updateUserPhoto: combineResolvers(
     isAuthenticated,
-    async (root, { input: { id, image, imagePublicId, isCover } }, { User }: IContext) => {
-      const { createReadStream } = await image
-      const stream = createReadStream()
-      const uploadImage: any = await uploadToCloudinary(stream, 'user', imagePublicId)
+    async (root, { input: { image, isCover } }, { authUser: { id, username }, User }: IContext) => {
+      if (image) {
+        const { createReadStream, filename } = await image
+        const stream = createReadStream()
+        const imagePublicId = v4()
+        // Ensure upload path
+        mkdirSync(`${UPLOAD_DIR}/${username}`)
+        const imageAddress = `${username}/${imagePublicId}${extname(filename)}`
+        const path = `${UPLOAD_DIR}/${imageAddress}`
 
-      if (!uploadImage.secure_url)
-        throw new Error('Something went wrong while uploading image to Cloudinary.')
+        // Store the file in the filesystem.
+        await new Promise((resolve, reject) => {
+          const writeStream = createWriteStream(path)
+          writeStream.on('finish', resolve)
+          writeStream.on('error', (error) => {
+            unlinkSync(path)
+            reject(error)
+          })
 
-      const fieldsToUpdate: any = {}
-      if (isCover) {
-        fieldsToUpdate.coverImage = uploadImage.secure_url
-        fieldsToUpdate.coverImagePublicId = uploadImage.public_id
+          stream.on('error', (error) => writeStream.destroy(error))
+          stream.pipe(writeStream)
+        })
+
+        const fieldsToUpdate = {
+          [isCover ? 'coverImage' : 'image']: imageAddress,
+          [isCover ? 'coverImagePublicId' : 'imagePublicId']: imagePublicId
+        }
+
+        // Record the file metadata in the DB.
+        await User.findByIdAndUpdate(id, { $set: fieldsToUpdate })
+
+        return fieldsToUpdate
       } else {
-        fieldsToUpdate.image = uploadImage.secure_url
-        fieldsToUpdate.imagePublicId = uploadImage.public_id
+        const fieldsToUpdate = {
+          [isCover ? 'coverImage' : 'image']: undefined,
+          [isCover ? 'coverImagePublicId' : 'imagePublicId']: undefined
+        }
+
+        const userFound = await User.findByIdAndUpdate(id, {
+          $set: fieldsToUpdate
+        })
+
+        if (userFound)
+          try {
+            unlinkSync(`${UPLOAD_DIR}/${userFound[isCover ? 'coverImage' : 'image']}`)
+          } catch {
+            console.log('Failed to unlink, file does not exist')
+          }
+
+        return fieldsToUpdate
       }
-
-      const updatedUser = await User.findOneAndUpdate(
-        { _id: id },
-        { ...fieldsToUpdate },
-        { new: true }
-      )
-
-      return updatedUser
     }
   )
 }
 
 const Subscription = {
-  /**
-   * Subscribes to user's isOnline change event
-   */
+  // DONE:
   isUserOnline: {
     subscribe: withFilter(
       () => pubSub.asyncIterator(IS_USER_ONLINE),

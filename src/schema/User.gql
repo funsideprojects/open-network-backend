@@ -1,5 +1,5 @@
 # ---------------------------------------------------------
-# Model Objects
+# *_: Model Objects
 # ---------------------------------------------------------
 type User {
   id:                         ID!
@@ -9,9 +9,9 @@ type User {
   password:                   String!
   passwordResetToken:         String
   passwordResetTokenExpiry:   String
-  image:                      File
+  image:                      String
   imagePublicId:              String
-  coverImage:                 File
+  coverImage:                 String
   coverImagePublicId:         String
   isOnline:                   Boolean
   lastActiveAt:               String
@@ -21,21 +21,13 @@ type User {
 }
 
 type File {
-  filename:                   String!
-  mimetype:                   String!
-  encoding:                   String!
-}
-
-type Token {
-  token:                      String!
-}
-
-type SuccessMessage {
-  message:                    String!
+  filename:                   String
+  mimetype:                   String
+  encoding:                   String
 }
 
 # ---------------------------------------------------------
-# Input Objects
+# *_: Input Objects
 # ---------------------------------------------------------
 input SignInInput {
   emailOrUsername:            String!
@@ -66,8 +58,13 @@ input UploadUserPhotoInput {
   isCover:                    Boolean
 }
 
+input UpdateUserPhotoInput {
+  image:                      Upload!
+  isCover:                    Boolean
+}
+
 # ---------------------------------------------------------
-# Return Payloads
+# *_: Return Payloads
 # ---------------------------------------------------------
 type UserPayload {
   id:                         ID!
@@ -86,61 +83,75 @@ type UserPayload {
 }
 
 type UsersPayload {
-  users:                     [UserPayload]!
+  users:                     [UserPayload]
   count:                      Int!
 }
 
 type IsUserOnlinePayload {
-  userId:                     ID!
+  userId:                     ID
   isOnline:                   Boolean
   lastActiveAt:               String
 }
 
+type Token {
+  token:                      String!
+}
+
+type SuccessMessage {
+  message:                    String!
+}
+
+type UpdateUserPhotoResponse {
+  image:                      String
+  imagePublicId:              String
+  coverImage:                 String
+  coverImagePublicId:         String
+}
 # ---------------------------------------------------------
-# Queries
+# *_: Queries
 # ---------------------------------------------------------
 type Query {
-  # Gets the currently logged in user
+  # DONE: Gets the currently logged in user
   getAuthUser:                                              UserPayload
 
-  # Gets user by username or by id
+  # DONE: Gets user by username or by id
   getUser(username: String, id: ID):                        UserPayload
 
-  # Gets all users
+  # DONE: Gets all users
   getUsers(skip: Int, limit: Int):                          UsersPayload
 
-  # Searches users by username or fullName
+  # DONE: Searches users by username or fullName
   searchUsers(searchQuery: String!):                       [UserPayload]
 
-  # Gets Suggested people for authUser
+  # DONE: Gets Suggested people for authUser
   suggestPeople:                                           [UserPayload]
 
-  # Verifies reset password token
+  # DONE: Verifies reset password token
   verifyResetPasswordToken(email: String, token: String!):  SuccessMessage
 }
 
 # ---------------------------------------------------------
-# Mutations
+# *_: Mutations
 # ---------------------------------------------------------
 type Mutation {
-  # Signs in user
+  # DONE: Signs in user
   signin(input: SignInInput!):                              Token
 
-  # Signs up user
+  # DONE: Signs up user
   signup(input: SignUpInput!):                              Token
 
-  # Requests reset password
+  # DONE: Requests reset password
   requestPasswordReset(input: RequestPasswordResetInput!):  SuccessMessage
 
-  # Resets user password
+  # DONE: Resets user password
   resetPassword(input: ResetPasswordInput!):                Token
 
-  # Uploads user Profile or Cover photo
-  uploadUserPhoto(input: UploadUserPhotoInput!):            UserPayload
+  # DONE: Uploads user Profile or Cover photo
+  updateUserPhoto(input: UpdateUserPhotoInput!):            UpdateUserPhotoResponse!
 }
 
 # ---------------------------------------------------------
-# Subscriptions
+# *_: Subscriptions
 # ---------------------------------------------------------
 type Subscription {
   # Subscribes to is user online event

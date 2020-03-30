@@ -27,12 +27,16 @@ export const pubSub = new PubSub()
  */
 export function createApolloServer(typeDefs, resolvers, models: IModels) {
   return new ApolloServer({
+    uploads: {
+      maxFileSize: 10000000, // 10 MB
+      maxFiles: 20
+    },
     typeDefs,
     resolvers,
     context: async ({ req, connection }) => {
       if (connection) return connection.context
 
-      let authUser
+      let authUser = {}
       if (req.headers.authorization !== 'null') {
         const user = await checkAuthorization(req.headers.authorization!)
         if (user) authUser = user
@@ -44,18 +48,18 @@ export function createApolloServer(typeDefs, resolvers, models: IModels) {
       onConnect: async (connectionParams: any, _webSocket) => {
         // *: Check if user is authenticated
         if (connectionParams.authorization) {
-          const user = await checkAuthorization(connectionParams.authorization)
+          const authUser = await checkAuthorization(connectionParams.authorization)
 
           // *: Publish user isOnline true
           pubSub.publish(IS_USER_ONLINE, {
             isUserOnline: {
-              userId: user!.id,
+              userId: authUser!.id,
               isOnline: true
             }
           })
 
           // Add authUser to socket's context, so we have access to it, in onDisconnect method
-          return { authUser: user }
+          return { authUser }
         }
       },
       onDisconnect: async (_webSocket, context) => {
@@ -71,10 +75,7 @@ export function createApolloServer(typeDefs, resolvers, models: IModels) {
           })
 
           // Update user isOnline to false in DB
-          await models.User.findOneAndUpdate(
-            { email: subscriptionContext.authUser.email },
-            { isOnline: false }
-          )
+          await models.User.findByIdAndUpdate(subscriptionContext.authUser.id, { isOnline: false })
         }
       }
     }
