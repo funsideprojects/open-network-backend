@@ -9,7 +9,6 @@ import { v4 } from 'uuid'
 import { IS_USER_ONLINE } from 'constants/Subscriptions'
 import { uploadToCloudinary, generateToken, sendEmail, pubSub, IContext } from 'utils'
 
-// import { getRequestedFieldsFromInfo } from './functions'
 import { isAuthenticated } from './high-order-resolvers'
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? './uploads'
@@ -17,14 +16,15 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR ?? './uploads'
 const AUTH_TOKEN_EXPIRY = '1y'
 const RESET_PASSWORD_TOKEN_EXPIRY = 1000 * 60 * 60
 
+// *_:
 const Query = {
   // DONE:
   getAuthUser: combineResolvers(
     isAuthenticated,
-    async (root, args, { authUser, User }: IContext, info) => {
-      // const requestedFields = getRequestedFieldsFromInfo(info)
+    async (root, args, { authUser: { id }, User }: IContext) => {
+      const userFound = await User.findOne({ _id: id })
 
-      return await User.findOne({ email: authUser.email }, { isOnline: true })
+      return userFound
     }
   ),
 
@@ -325,6 +325,20 @@ const Mutation = {
   },
 
   // DONE:
+  updateUserInfo: combineResolvers(
+    isAuthenticated,
+    async (root, { input: { fullName } }, { authUser: { id }, User }: IContext) => {
+      // FullName validation
+      if (fullName.length < 4 || fullName.length > 40)
+        throw new Error(`Full name length should be between 4-40 characters.`)
+
+      const updatedUser = await User.findByIdAndUpdate(id, { $set: { fullName } }, { new: true })
+
+      return updatedUser
+    }
+  ),
+
+  // DONE:
   updateUserPhoto: combineResolvers(
     isAuthenticated,
     async (root, { input: { image, isCover } }, { authUser: { id, username }, User }: IContext) => {
@@ -382,6 +396,7 @@ const Mutation = {
   )
 }
 
+// *_:
 const Subscription = {
   // DONE:
   isUserOnline: {

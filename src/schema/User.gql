@@ -51,11 +51,8 @@ input ResetPasswordInput {
   password:                   String!
 }
 
-input UploadUserPhotoInput {
-  id:                         ID!
-  image:                      Upload!
-  imagePublicId:              String
-  isCover:                    Boolean
+input UpdateUserInfoInput {
+  fullName:                   String
 }
 
 input UpdateUserPhotoInput {
@@ -146,6 +143,9 @@ type Mutation {
   # DONE: Resets user password
   resetPassword(input: ResetPasswordInput!):                Token
 
+  # DONE: Update user info
+  updateUserInfo(input: UpdateUserInfoInput!):              UserPayload
+
   # DONE: Uploads user Profile or Cover photo
   updateUserPhoto(input: UpdateUserPhotoInput!):            UpdateUserPhotoResponse!
 }
@@ -154,6 +154,6 @@ type Mutation {
 # *_: Subscriptions
 # ---------------------------------------------------------
 type Subscription {
-  # Subscribes to is user online event
+  # DONE: Subscribes to is user online event
   isUserOnline(userId: ID!):                                IsUserOnlinePayload
 }

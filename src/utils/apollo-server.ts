@@ -75,7 +75,10 @@ export function createApolloServer(typeDefs, resolvers, models: IModels) {
           })
 
           // Update user isOnline to false in DB
-          await models.User.findByIdAndUpdate(subscriptionContext.authUser.id, { isOnline: false })
+          await models.User.findByIdAndUpdate(subscriptionContext.authUser.id, {
+            isOnline: false,
+            lastActiveAt: new Date()
+          })
         }
       }
     }
