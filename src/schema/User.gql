@@ -13,10 +13,10 @@ type User {
   imagePublicId:              String
   coverImage:                 String
   coverImagePublicId:         String
-  isOnline:                   Boolean
-  lastActiveAt:               String
+  isOnline:                   Boolean!
+  lastActiveAt:               String!
 
-  createdAt:                  String
+  createdAt:                  String!
   updatedAt:                  String
 }
 
@@ -64,7 +64,7 @@ input UpdateUserPhotoInput {
 # *_: Return Payloads
 # ---------------------------------------------------------
 type UserPayload {
-  id:                         ID!
+  id:                         ID
   fullName:                   String
   email:                      String
   username:                   String
@@ -104,26 +104,27 @@ type UpdateUserPhotoResponse {
   coverImage:                 String
   coverImagePublicId:         String
 }
+
 # ---------------------------------------------------------
 # *_: Queries
 # ---------------------------------------------------------
 type Query {
-  # DONE: Gets the currently logged in user
+  # DONE: Get the currently logged in user
   getAuthUser:                                              UserPayload
 
-  # DONE: Gets user by username or by id
+  # DONE: Get user by username or by id
   getUser(username: String, id: ID):                        UserPayload
 
-  # DONE: Gets all users
+  # DONE: Get all users except followed users and authUser
   getUsers(skip: Int, limit: Int):                          UsersPayload
 
-  # DONE: Searches users by username or fullName
+  # DONE: Searche users by username or fullName
   searchUsers(searchQuery: String!):                       [UserPayload]
 
-  # DONE: Gets Suggested people for authUser
+  # DONE: Get Suggestted people for authUser
   suggestPeople:                                           [UserPayload]
 
-  # DONE: Verifies reset password token
+  # DONE: Verify reset password token
   verifyResetPasswordToken(email: String, token: String!):  SuccessMessage
 }
 
@@ -131,22 +132,22 @@ type Query {
 # *_: Mutations
 # ---------------------------------------------------------
 type Mutation {
-  # DONE: Signs in user
+  # DONE: Sign in user
   signin(input: SignInInput!):                              Token
 
-  # DONE: Signs up user
+  # DONE: Sign up user
   signup(input: SignUpInput!):                              Token
 
-  # DONE: Requests reset password
+  # DONE: Request reset password
   requestPasswordReset(input: RequestPasswordResetInput!):  SuccessMessage
 
-  # DONE: Resets user password
+  # DONE: Reset user password
   resetPassword(input: ResetPasswordInput!):                Token
 
   # DONE: Update user info
   updateUserInfo(input: UpdateUserInfoInput!):              UserPayload
 
-  # DONE: Uploads user Profile or Cover photo
+  # DONE: Upload user Profile or Cover photo
   updateUserPhoto(input: UpdateUserPhotoInput!):            UpdateUserPhotoResponse!
 }
 
@@ -154,6 +155,6 @@ type Mutation {
 # *_: Subscriptions
 # ---------------------------------------------------------
 type Subscription {
-  # DONE: Subscribes to is user online event
+  # DONE: Subscribe to is user online event
   isUserOnline(userId: ID!):                                IsUserOnlinePayload
 }

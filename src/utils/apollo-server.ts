@@ -1,12 +1,12 @@
 import { ApolloServer } from 'apollo-server-express'
 import { PubSub } from 'apollo-server'
 
-import { checkAuthorization, IDecodedToken } from './jwt'
-import { IModels } from '../models'
-import { IS_USER_ONLINE } from '../constants/Subscriptions'
+import { IS_USER_ONLINE } from 'constants/Subscriptions'
+import { IModels } from 'models'
+import { checkAuthorization, IDecodedToken } from 'utils/jwt'
+import { highlight } from 'utils/chalk'
 
 // *_: Interface
-
 export interface IContext extends IModels {
   authUser: IDecodedToken
 }
@@ -36,11 +36,13 @@ export function createApolloServer(typeDefs, resolvers, models: IModels) {
     context: async ({ req, connection }) => {
       if (connection) return connection.context
 
-      let authUser = {}
+      let authUser
       if (req.headers.authorization !== 'null') {
         const user = await checkAuthorization(req.headers.authorization!)
         if (user) authUser = user
       }
+
+      console.log(highlight(0, '[Current User]:'), authUser?.fullName, authUser?.id)
 
       return Object.assign({ authUser }, models)
     },
@@ -74,7 +76,7 @@ export function createApolloServer(typeDefs, resolvers, models: IModels) {
             }
           })
 
-          // Update user isOnline to false in DB
+          // Update user isOnline and lastActiveAt
           await models.User.findByIdAndUpdate(subscriptionContext.authUser.id, {
             isOnline: false,
             lastActiveAt: new Date()

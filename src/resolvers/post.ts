@@ -1,54 +1,178 @@
-import { uploadToCloudinary, deleteFromCloudinary } from '../utils/cloudinary'
+import { GraphQLResolveInfo } from 'graphql'
 import { combineResolvers } from 'graphql-resolvers'
+import { Types } from 'mongoose'
 
-import { isAuthenticated } from './utils/authenticate'
-import { IContext } from '../utils/apollo-server'
+import { IContext } from 'utils/apollo-server'
 
+import { getRequestedFieldsFromInfo, uploadFile, removeUploadedFile } from './functions'
+import { isAuthenticated } from './high-order-resolvers'
+
+// *_:
 const Query = {
-  /**
-   * Gets all posts
-   *
-   * @param {string} authUserId
-   * @param {int} skip how many posts to skip
-   * @param {int} limit how many posts to limit
-   */
-  getPosts: combineResolvers(
-    isAuthenticated,
-    async (root, { authUserId, skip, limit }, { Post }: IContext) => {
-      const query: any = {
-        $and: [{ image: { $ne: null } }, { author: { $ne: authUserId } }]
+  // DONE:
+  getPosts: async (
+    root,
+    { type, username, skip, limit },
+    { authUser, User, Post, Follow }: IContext,
+    info: GraphQLResolveInfo
+  ) => {
+    let query
+    switch (type) {
+      case 'USER': {
+        const userFound = await User.findOne({ username }).select('_id')
+        if (!userFound) throw new Error('User not found')
+
+        query = {
+          $and: [
+            { authorId: userFound._id },
+            ...(authUser?.id !== userFound.id ? [{ isPrivate: false }] : [])
+          ]
+        }
+
+        break
       }
-      const postsCount = await Post.find(query).countDocuments()
-      const allPosts = await Post.find(query)
-        .populate({
-          path: 'author',
-          populate: [
-            { path: 'following' },
-            { path: 'followers' },
+
+      case 'FOLLOWING': {
+        if (!authUser) throw new Error('Not signed in')
+        const currentFollowing = await Follow.find({ '_id.followerId': authUser.id })
+
+        query = {
+          $or: [
             {
-              path: 'notifications',
-              populate: [
-                { path: 'author' },
-                { path: 'follow' },
-                { path: 'like' },
-                { path: 'comment' }
+              $and: [
+                { authorId: { $in: [...currentFollowing.map(({ _id }) => _id.userId)] } },
+                { isPrivate: false }
               ]
+            },
+            {
+              authorId: Types.ObjectId(authUser.id)
             }
           ]
-        })
-        .populate('likes')
-        .populate({
-          path: 'comments',
-          options: { sort: { createdAt: 'desc' } },
-          populate: { path: 'author' }
-        })
-        .skip(skip)
-        .limit(limit)
-        .sort({ createdAt: 'desc' })
+        }
 
-      return { posts: allPosts, count: postsCount }
+        break
+      }
+
+      case 'EXPLORE': {
+        if (authUser) {
+          const currentFollowing = await Follow.find({ '_id.followerId': authUser.id })
+
+          query = {
+            $and: [
+              // { image: { $ne: null } },
+              {
+                authorId: {
+                  $nin: [
+                    ...currentFollowing.map(({ _id }) => _id.userId),
+                    Types.ObjectId(authUser.id)
+                  ]
+                }
+              },
+              { isPrivate: false }
+            ]
+          }
+        } else {
+          query = {
+            $and: [
+              // { image: { $ne: null } },
+              { isPrivate: false }
+            ]
+          }
+        }
+
+        break
+      }
+
+      default: {
+        throw new Error('Invalid operation')
+      }
     }
-  ),
+
+    const requestedFields = getRequestedFieldsFromInfo(info)
+    const result = {}
+
+    if (requestedFields.includes('count')) {
+      const count = await Post.countDocuments(query)
+
+      result['count'] = count
+    }
+
+    if (requestedFields.map((f) => f.includes('posts'))) {
+      const shouldAggregateLikeCount = requestedFields.some((f) => f.includes('posts.likeCount'))
+      const shouldAggregateCommentCount = requestedFields.some((f) =>
+        f.includes('posts.commentCount')
+      )
+
+      const posts = await Post.aggregate([
+        { $match: query },
+        { $sort: { createdAt: -1 } },
+        ...(skip ? [{ $skip: skip }] : []),
+        ...(limit ? [{ $limit: limit }] : []),
+        ...(shouldAggregateLikeCount
+          ? [
+              {
+                $lookup: {
+                  from: 'likes',
+                  let: { postId: '$_id' },
+                  pipeline: [
+                    { $match: { $expr: { $eq: ['$_id.postId', '$$postId'] } } },
+                    { $project: { _id: 1 } }
+                  ],
+                  as: 'likeCount'
+                }
+              }
+            ]
+          : []),
+        ...(shouldAggregateCommentCount
+          ? [
+              {
+                $lookup: {
+                  from: 'comments',
+                  let: { postId: '$_id' },
+                  pipeline: [
+                    { $match: { $expr: { $eq: ['$postId', '$$postId'] } } },
+                    { $project: { _id: 1 } }
+                  ],
+                  as: 'commentCount'
+                }
+              }
+            ]
+          : []),
+        { $addFields: { id: '$_id' } },
+        {
+          $set: {
+            ...(shouldAggregateLikeCount
+              ? {
+                  likeCount: {
+                    $cond: {
+                      if: { $isArray: '$likeCount' },
+                      then: { $size: '$likeCount' },
+                      else: 0
+                    }
+                  }
+                }
+              : {}),
+            ...(shouldAggregateCommentCount
+              ? {
+                  commentCount: {
+                    $cond: {
+                      if: { $isArray: '$commentCount' },
+                      then: { $size: '$commentCount' },
+                      else: 0
+                    }
+                  }
+                }
+              : {})
+          }
+        }
+      ])
+
+      result['posts'] = posts
+    }
+
+    return result
+  },
+
   /**
    * Gets posts from followed users
    *
@@ -56,170 +180,214 @@ const Query = {
    * @param {int} skip how many posts to skip
    * @param {int} limit how many posts to limit
    */
-  getFollowedPosts: combineResolvers(
-    isAuthenticated,
-    async (root, { userId, skip, limit }, { Post, Follow }: IContext) => {
-      // Find user ids, that current user follows
-      const userFollowing: Array<any> = []
-      const follow = await Follow.find({ follower: userId }, { _id: 0 }).select('user')
-      follow.map((f) => userFollowing.push(f.user))
+  // getFollowingPosts: combineResolvers(
+  //   isAuthenticated,
+  //   async (root, { userId, skip, limit }, { Post, Follow }: IContext) => {
+  //     // Find user ids, that current user follows
+  //     const userFollowing: Array<any> = []
+  //     const follow = await Follow.find({ follower: userId }, { _id: 0 }).select('user')
+  //     follow.map((f) => userFollowing.push(f.user))
 
-      // Find user posts and followed posts by using userFollowing ids array
-      const query = {
-        $or: [{ author: { $in: userFollowing } }, { author: userId }]
+  //     // Find user posts and followed posts by using userFollowing ids array
+  //     const query = {
+  //       $or: [{ author: { $in: userFollowing } }, { author: userId }]
+  //     }
+  //     const followedPostsCount = await Post.find(query).countDocuments()
+  //     const followedPosts = await Post.find(query)
+  //       .populate({
+  //         path: 'author',
+  //         populate: [
+  //           { path: 'following' },
+  //           { path: 'followers' },
+  //           {
+  //             path: 'notifications',
+  //             populate: [
+  //               { path: 'author' },
+  //               { path: 'follow' },
+  //               { path: 'like' },
+  //               { path: 'comment' }
+  //             ]
+  //           }
+  //         ]
+  //       })
+  //       .populate('likes')
+  //       .populate({
+  //         path: 'comments',
+  //         options: { sort: { createdAt: 'desc' } },
+  //         populate: { path: 'author' }
+  //       })
+  //       .skip(skip)
+  //       .limit(limit)
+  //       .sort({ createdAt: 'desc' })
+
+  //     return { posts: followedPosts, count: followedPostsCount }
+  //   }
+  // ),
+
+  // DONE:
+  getPost: combineResolvers(
+    async (root, { postId }, { authUser, Post }: IContext, info: GraphQLResolveInfo) => {
+      const postFound = await Post.findById(postId).select({ _id: 1, isPrivate: 1, authorId: 1 })
+      if (!postFound) throw new Error('Post not found!')
+
+      if (postFound.isPrivate) {
+        if (!authUser || authUser.id !== postFound.authorId.toHexString()) {
+          throw new Error('Post not found')
+        }
       }
-      const followedPostsCount = await Post.find(query).countDocuments()
-      const followedPosts = await Post.find(query)
-        .populate({
-          path: 'author',
-          populate: [
-            { path: 'following' },
-            { path: 'followers' },
-            {
-              path: 'notifications',
-              populate: [
-                { path: 'author' },
-                { path: 'follow' },
-                { path: 'like' },
-                { path: 'comment' }
-              ]
-            }
-          ]
-        })
-        .populate('likes')
-        .populate({
-          path: 'comments',
-          options: { sort: { createdAt: 'desc' } },
-          populate: { path: 'author' }
-        })
-        .skip(skip)
-        .limit(limit)
-        .sort({ createdAt: 'desc' })
 
-      return { posts: followedPosts, count: followedPostsCount }
-    }
-  ),
-  /**
-   * Gets post by id
-   *
-   * @param {string} id
-   */
-  getPost: combineResolvers(isAuthenticated, async (root, { id }, { Post }: IContext) => {
-    const post = await Post.findById(id)
-      .populate({
-        path: 'author',
-        populate: [
-          { path: 'following' },
-          { path: 'followers' },
-          {
-            path: 'notifications',
-            populate: [
-              { path: 'author' },
-              { path: 'follow' },
-              { path: 'like' },
-              { path: 'comment' }
+      const requestedFields = getRequestedFieldsFromInfo(info)
+      const shouldAggregateLikeCount = requestedFields.some((f) => f.includes('likeCount'))
+      const shouldAggregateCommentCount = requestedFields.some((f) => f.includes('commentCount'))
+
+      const [post] = await Post.aggregate([
+        { $match: { _id: postFound._id } },
+        ...(shouldAggregateLikeCount
+          ? [
+              {
+                $lookup: {
+                  from: 'likes',
+                  let: { postId: '$_id' },
+                  pipeline: [
+                    { $match: { $expr: { $eq: ['$_id.postId', '$$postId'] } } },
+                    { $project: { _id: 1 } }
+                  ],
+                  as: 'likeCount'
+                }
+              }
             ]
+          : []),
+        ...(shouldAggregateCommentCount
+          ? [
+              {
+                $lookup: {
+                  from: 'comments',
+                  let: { postId: '$_id' },
+                  pipeline: [
+                    { $match: { $expr: { $eq: ['$postId', '$$postId'] } } },
+                    { $project: { _id: 1 } }
+                  ],
+                  as: 'commentCount'
+                }
+              }
+            ]
+          : []),
+        { $addFields: { id: '$_id' } },
+        {
+          $set: {
+            ...(shouldAggregateLikeCount
+              ? {
+                  likeCount: {
+                    $cond: {
+                      if: { $isArray: '$likeCount' },
+                      then: { $size: '$likeCount' },
+                      else: 0
+                    }
+                  }
+                }
+              : {}),
+            ...(shouldAggregateCommentCount
+              ? {
+                  commentCount: {
+                    $cond: {
+                      if: { $isArray: '$commentCount' },
+                      then: { $size: '$commentCount' },
+                      else: 0
+                    }
+                  }
+                }
+              : {})
           }
-        ]
-      })
-      .populate('likes')
-      .populate({
-        path: 'comments',
-        options: { sort: { createdAt: -1 } },
-        populate: { path: 'author' }
-      })
+        }
+      ])
 
-    return post
-  })
+      return post
+    }
+  )
 }
 
+// *_:
 const Mutation = {
-  /**
-   * Creates a new post
-   *
-   * @param {string} title
-   * @param {string} image
-   * @param {string} authorId
-   */
-  createPost: async (root, { input: { title, image, authorId } }, { Post, User }) => {
-    if (!title && !image) throw new Error('Post title or image is required.')
+  // DONE:
+  createPost: combineResolvers(
+    isAuthenticated,
+    async (
+      root,
+      { input: { title, image, isPrivate = false } },
+      { authUser: { id, username }, Post }: IContext
+    ) => {
+      if (!title && !image) throw new Error('Post title or image is required.')
 
-    let imageUrl
-    let imagePublicId
-    if (image) {
-      const { createReadStream } = await image
-      const stream = createReadStream()
-      const uploadImage: any = await uploadToCloudinary(stream, 'post')
+      let imageUrl
+      let imagePublicId
+      if (image) {
+        const uploadedResult = await uploadFile(username, image)
 
-      if (!uploadImage.secure_url)
-        throw new Error('Something went wrong while uploading image to Cloudinary')
+        imageUrl = uploadedResult.imageAddress
+        imagePublicId = uploadedResult.imagePublicId
+      }
 
-      imageUrl = uploadImage.secure_url
-      imagePublicId = uploadImage.public_id
+      const newPost = await new Post({
+        title,
+        image: imageUrl,
+        imagePublicId,
+        authorId: id,
+        isPrivate
+      }).save()
+
+      return newPost
     }
+  ),
 
-    const newPost = await new Post({
-      title,
-      image: imageUrl,
-      imagePublicId,
-      author: authorId
-    }).save()
+  // DONE:
+  updatePost: combineResolvers(
+    isAuthenticated,
+    async (root, { input: { id, title, isPrivate } }, { authUser, Post }: IContext) => {
+      if (!title && typeof isPrivate !== 'boolean') throw new Error('Nothing to update')
+      const postFound = await Post.findById(id).select({ authorId: 1 })
+      if (!postFound) throw new Error('Post not found!')
+      if (postFound.authorId.toHexString() !== authUser.id) throw new Error('Perrmission denied!')
 
-    await User.findOneAndUpdate({ _id: authorId }, { $push: { posts: newPost.id } })
+      try {
+        await Post.findByIdAndUpdate(id, {
+          $set: {
+            ...(title ? { title } : {}),
+            ...(isPrivate ? { isPrivate } : {})
+          }
+        })
 
-    return newPost
-  },
-  /**
-   * Deletes a user post
-   *
-   * @param {string} id
-   * @param {imagePublicId} id
-   */
+        return true
+      } catch {
+        return false
+      }
+    }
+  ),
+
+  // FIXME:
   deletePost: combineResolvers(
     isAuthenticated,
-    async (root, { input: { id, imagePublicId } }, { Post, Like, User, Comment, Notification }) => {
-      // Remove post image from cloudinary, if imagePublicId is present
-      if (imagePublicId) {
-        const deleteImage: any = await deleteFromCloudinary(imagePublicId)
+    async (root, { input: { id } }, { Post, Like, Comment, Notification }: IContext) => {
+      const postFound = await Post.findOne({ _id: id })
+      if (!postFound) throw new Error('Post not found!')
 
-        if (deleteImage.result !== 'ok')
-          throw new Error('Something went wrong while deleting image from Cloudinary')
+      // Remove post image from upload
+      if (postFound.image) {
+        removeUploadedFile(postFound.image)
       }
 
       // Find post and remove it
-      const post = await Post.findByIdAndRemove(id)
-
-      // Delete post from authors (users) posts collection
-      await User.findOneAndUpdate({ _id: post.author }, { $pull: { posts: post.id } })
+      await Post.findByIdAndRemove(id)
 
       // Delete post likes from likes collection
-      await Like.find({ post: post.id }).deleteMany()
-      // Delete post likes from users collection
-      post.likes.map(async (likeId) => {
-        await User.where({ likes: likeId }).update({ $pull: { likes: likeId } })
-      })
+      await Like.deleteMany({ '_id.postId': id })
 
       // Delete post comments from comments collection
-      await Comment.find({ post: post.id }).deleteMany()
-      // Delete comments from users collection
-      post.comments.map(async (commentId) => {
-        await User.where({ comments: commentId }).update({
-          $pull: { comments: commentId }
-        })
-      })
+      await Comment.deleteMany({ postId: id })
 
-      // Find user notification in users collection and remove them
-      const userNotifications = await Notification.find({ post: post.id })
-
-      userNotifications.map(async (notification) => {
-        await User.where({ notifications: notification.id }).update({
-          $pull: { notifications: notification.id }
-        })
-      })
       // Remove notifications from notifications collection
-      await Notification.find({ post: post.id }).deleteMany()
+      // await Notification.deleteMany({ relativeData: id })
 
-      return post
+      return true
     }
   )
 }

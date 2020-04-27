@@ -36,14 +36,12 @@ export function generateToken(user: IUserData, secret: string, expiresIn: string
  *
  * @param {String} token - JWT token
  */
-export function checkAuthorization(token: string): Promise<IDecodedToken | undefined> {
-  return new Promise(async (resolve) => {
-    try {
-      const authUser = await verify(token, process.env.SECRET!)
+export async function checkAuthorization(token: string): Promise<IDecodedToken | undefined> {
+  try {
+    const authUser = await verify(token, process.env.SECRET!)
 
-      if (authUser) resolve(authUser as IDecodedToken)
-    } catch (error) {
-      resolve(undefined)
-    }
-  })
+    if (authUser) return authUser as IDecodedToken
+  } catch (error) {
+    return undefined
+  }
 }

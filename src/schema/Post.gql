@@ -1,40 +1,45 @@
 # ---------------------------------------------------------
-# Model Objects
+# *_: Model Objects
 # ---------------------------------------------------------
 type Post {
   id:             ID!
   title:          String
   image:          File
   imagePublicId:  String
-  authorId:       ID
+  authorId:       ID!
+  isPrivate:      Boolean!
 
-  createdAt:      String
+  createdAt:      String!
   updatedAt:      String
 }
 
 # ---------------------------------------------------------
-# Input Objects
+# *_: Input Objects
 # ---------------------------------------------------------
 input CreatePostInput {
   title:          String
   image:          Upload
-  imagePublicId:  String
-  private:        Boolean
+  isPrivate:      Boolean!
 }
 
 input UpdatePostInput {
   id:             ID!
   title:          String
-  private:        Boolean
+  isPrivate:      Boolean
 }
 
 input DeletePostInput {
   id:             ID!
-  imagePublicId:  String
+}
+
+enum GetPostsType {
+  USER
+  FOLLOWING
+  EXPLORE
 }
 
 # ---------------------------------------------------------
-# Return Payloads
+# *_: Return Payloads
 # ---------------------------------------------------------
 type PostPayload {
   id:             ID
@@ -42,53 +47,46 @@ type PostPayload {
   image:          String
   imagePublicId:  String
   authorId:       ID
-  author:         UserPayload!
-  private:        Boolean
-  likes:         [UserPayload]
-  comments:      [CommentPayload]
+  isPrivate:      Boolean
+
+  likeCount:      Int
+  commentCount:   Int
 
   createdAt:      String
   updatedAt:      String
 }
 
-type UserPostsPayload {
-  posts:         [PostPayload]!
-  count:          Int!
-}
-
 type PostsPayload {
-  posts:         [PostPayload]!
   count:          Int!
+  posts:         [PostPayload]!
 }
 
 # ---------------------------------------------------------
-# Queries
+# *_: Queries
 # ---------------------------------------------------------
 type Query {
-  # Gets user posts by username
-  getUserPosts(username: String!, skip: Int, limit: Int):       UserPostsPayload
+  # DONE: Get posts by input operation
+  getPosts(type: GetPostsType!, username: String, skip: Int, limit: Int):       PostsPayload
 
-  # Gets posts from authUser's followed users
-  getFollowedPosts(skip: Int, limit: Int):                      PostsPayload
+  # DONE: Get post by id
+  getPost(postId: ID!):                                         PostPayload
 
-  # Gets post by id
-  getPost(id: ID!):                                             PostPayload
 }
 
 # ---------------------------------------------------------
-# Mutations
+# *_: Mutations
 # ---------------------------------------------------------
 type Mutation {
-  # Creates a new post
-  createPost(input: CreatePostInput!): PostPayload
+  # DONE: Create a new post
+  createPost(input: CreatePostInput!):                          PostPayload
 
-  # Update post
-  updatePost(input: UpdatePostInput!): PostPayload
+  # DONE: Update post
+  updatePost(input: UpdatePostInput!):                          Boolean
 
-  # Deletes a user post
-  deletePost(input: DeletePostInput!): Boolean
+  # FIXME: Delete a user post
+  deletePost(input: DeletePostInput!):                          Boolean
 }
 
 # ---------------------------------------------------------
-# Subscriptions
+# *_: Subscriptions
 # ---------------------------------------------------------

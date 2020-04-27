@@ -1,41 +1,63 @@
 # ---------------------------------------------------------
-# Model Objects
+# *_: Model Objects
 # ---------------------------------------------------------
+type Like {
+  _id:          LikeId!
+
+  createdAt:    String!
+  updatedAt:    String
+}
+
+type LikeId {
+  postId:       ID!
+  userId:       ID!
+}
 
 # ---------------------------------------------------------
-# Input Objects
+# *_: Input Objects
 # ---------------------------------------------------------
-input CreateLikeInput {
+input CreateOrDeleteLikeInput {
   postId:       ID!
 }
 
-input DeleteLikeInput {
-  postId:       ID!
+# ---------------------------------------------------------
+# *_: Return Payloads
+# ---------------------------------------------------------
+type LikePayload {
+  post:         PostPayload
+  user:         UserPayload
+
+  createdAt:    String
+  updatedAt:    String
+}
+
+type LikesPayload {
+  count:        Int
+  likes:       [LikePayload]
 }
 
 # ---------------------------------------------------------
-# Return Payloads
-# ---------------------------------------------------------
-
-# ---------------------------------------------------------
-# Queries
+# *_: Queries
 # ---------------------------------------------------------
 type Query {
-  # Gets likes made by authUser
-  getMyLikes(skip: Int, limit: Int):         [PostPayload]
+  # TODO: Get likes made by authUser
+  getMyLikes(skip: Int, limit: Int):          LikesPayload
+
+  # DONE: Get post's likes
+  getLikes(postId: ID!):                      LikesPayload
 }
 
 # ---------------------------------------------------------
-# Mutations
+# *_: Mutations
 # ---------------------------------------------------------
 type Mutation {
-  # Creates a like for post
-  createLike(input: CreateLikeInput!):       [String]
+  # DONE: Create a like for post
+  createLike(input: CreateOrDeleteLikeInput!):        Boolean
 
-  # Deletes a post like
-  deleteLike(input: DeleteLikeInput!):        Boolean
+  # DONE: Delete a post like
+  deleteLike(input: CreateOrDeleteLikeInput!):        Boolean
 }
 
 # ---------------------------------------------------------
-# Subscriptions
+# *_: Subscriptions
 # ---------------------------------------------------------

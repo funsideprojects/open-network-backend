@@ -1,18 +1,18 @@
 # ---------------------------------------------------------
-# Model Objects
+# *_: Model Objects
 # ---------------------------------------------------------
 type Comment {
   id:               ID!
-  comment:          String
+  comment:          String!
   postId:           ID!
   authorId:         ID!
 
-  createdAt:        String
+  createdAt:        String!
   updatedAt:        String
 }
 
 # ---------------------------------------------------------
-# Input Objects
+# *_: Input Objects
 # ---------------------------------------------------------
 input CreateCommentInput {
   comment:          String!
@@ -29,7 +29,7 @@ input DeleteCommentInput {
 }
 
 # ---------------------------------------------------------
-# Return Payloads
+# *_: Return Payloads
 # ---------------------------------------------------------
 type CommentPayload {
   id:               ID
@@ -43,28 +43,36 @@ type CommentPayload {
   updatedAt:        String
 }
 
+type CommentsPayload {
+  count:            Int
+  comments:        [CommentPayload]
+}
+
 # ---------------------------------------------------------
-# Queries
+# *_: Queries
 # ---------------------------------------------------------
 type Query {
-  # Gets comments made by authUser
-  getMyComments(skip: Int, limit: Int):          [CommentPayload]
+  # TODO: Get comments made by authUser
+  getMyComments(skip: Int, limit: Int):              [CommentPayload]
+
+  # DONE: Get Post's comment
+  getComments(postId: ID!, skip: Int, limit: Int):    CommentsPayload
 }
 
 # ---------------------------------------------------------
-# Mutations
+# *_: Mutations
 # ---------------------------------------------------------
 type Mutation {
-  # Creates a post comment
-  createComment(input: CreateCommentInput!):      CommentPayload
+  # DONE: Create a post comment
+  createComment(input: CreateCommentInput!):          CommentPayload
 
-  # Updates a post comment
-  updateComment(input: UpdateCommentInput!):      CommentPayload
+  # DONE: Update a post comment
+  updateComment(input: UpdateCommentInput!):          CommentPayload
 
-  # Deletes a post comment
-  deleteComment(input: DeleteCommentInput!):      Boolean
+  # DONE: Delete a post comment
+  deleteComment(input: DeleteCommentInput!):          Boolean
 }
 
 # ---------------------------------------------------------
-# Subscriptions
+# *_: Subscriptions
 # ---------------------------------------------------------

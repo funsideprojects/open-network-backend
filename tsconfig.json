@@ -19,12 +19,12 @@
     "experimentalDecorators": true,
     "sourceMap": false,
     "allowJs": true,
-    "outDir": "./build",
-    "baseUrl": "./src",
+    "outDir": "build",
+    "baseUrl": "src",
     "paths": {}
   },
   "include": [
-    "src/**/*"
+    "src"
   ],
   "exclude": [
     "node_modules",

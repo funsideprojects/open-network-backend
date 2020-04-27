@@ -12,7 +12,7 @@
     ],
     "ordered-imports": [false],
     "member-ordering": [false],
-    "curly": [true, "as-needed"],
+    "curly": [true, "ignore-same-line"],
     "interface-name": [true, "always-prefix"],
     "array-type": [true, "generic"],
     "member-access": [true, "no-public"],

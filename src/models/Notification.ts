@@ -3,8 +3,9 @@ import { ObjectId } from 'mongodb'
 
 export interface INotification extends Document {
   type: string
-  relativeData: string
-  authorId: ObjectId
+  additionalData?: string
+  fromId: ObjectId
+  toId: ObjectId
   seen: boolean
 }
 
@@ -17,13 +18,20 @@ const notificationSchema = new Schema(
       type: String,
       required: true
     },
-    relativeData: String,
-    authorId: {
+    additionalData: String,
+    fromId: {
       type: Schema.Types.ObjectId,
+      required: true,
+      ref: 'User'
+    },
+    toId: {
+      type: Schema.Types.ObjectId,
+      required: true,
       ref: 'User'
     },
     seen: {
       type: Boolean,
+      required: true,
       default: false
     }
   },
