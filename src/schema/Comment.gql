@@ -67,7 +67,7 @@ type Mutation {
   createComment(input: CreateCommentInput!):          CommentPayload
 
   # DONE: Update a post comment
-  updateComment(input: UpdateCommentInput!):          CommentPayload
+  updateComment(input: UpdateCommentInput!):          Boolean
 
   # DONE: Delete a post comment
   deleteComment(input: DeleteCommentInput!):          Boolean

@@ -39,8 +39,8 @@ const Query = {
       const comments = await Comment.aggregate([
         { $match: { postId: Types.ObjectId(postId) } },
         { $sort: { createdAt: -1 } },
-        ...(skip ? [{ $skip: skip }] : []),
-        ...(limit ? [{ $limit: limit }] : []),
+        ...(typeof skip === 'number' ? [{ $skip: skip }] : []),
+        ...(typeof limit === 'number' ? [{ $limit: limit }] : []),
         ...(shouldAggregateCommentsPost
           ? [
               {
@@ -129,7 +129,7 @@ const Mutation = {
     isAuthenticated,
     async (root, { input: { id, comment } }, { Comment }: IContext) => {
       try {
-        if (!comment || comment.match(/^\s*$/)) throw new Error('Please input comment!')
+        if (!comment || comment.match(/^\s*$/)) throw new Error('New comment is required!')
         await Comment.findByIdAndUpdate(id, { $set: { comment } })
 
         return true

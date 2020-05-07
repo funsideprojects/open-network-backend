@@ -9,20 +9,33 @@ import { isAuthenticated } from './high-order-resolvers'
 // *_:
 const Query = {
   // DONE:
-  getUserFollowings: async (
+  getFollowedUsers: async (
     root,
     { username, skip, limit },
-    { User, Follow }: IContext,
+    { authUser, User, Follow }: IContext,
     info: GraphQLResolveInfo
   ) => {
-    const userFound = await User.findOne({ username })
-    if (!userFound) throw new Error('User not found')
+    let userFound
+    // if there's username then find base on it
+    if (username) {
+      userFound = await User.findOne({ username })
+      if (!userFound) throw new Error('User not found')
+    } else {
+      // There's no username, then find followed users of authUser
+      if (authUser) {
+        userFound = await User.findOne({ username: authUser.username })
+        if (!userFound) throw new Error('User not found')
+        // There's no username and no authUser, invalid action
+      } else {
+        throw new Error(`Field 'username' is required`)
+      }
+    }
 
     const requestedFields = getRequestedFieldsFromInfo(info)
     const query = { '_id.followerId': userFound._id }
     const result = {}
 
-    // Count users followed by userFund
+    // Count users followed by userFound
     if (requestedFields.includes('count')) {
       const count = await Follow.countDocuments(query)
 
@@ -115,9 +128,13 @@ const Mutation = {
     async (root, { input: { userId } }, { authUser: { id }, User, Follow }: IContext) => {
       if (userId === id) throw new Error(`You can't follow yourself!`)
       if (!(await User.findById(userId))) throw new Error('User not found')
-      await new Follow({ _id: { userId, followerId: id } }).save()
+      if (!(await Follow.findOne({ $and: [{ '_id.userId': userId }, { '_id.followerId': id }] }))) {
+        await new Follow({ _id: { userId, followerId: id } }).save()
 
-      return true
+        return true
+      }
+
+      throw new Error(`You've already followed this user`)
     }
   ),
 

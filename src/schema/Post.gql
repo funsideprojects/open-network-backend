@@ -34,7 +34,7 @@ input DeletePostInput {
 
 enum GetPostsType {
   USER
-  FOLLOWING
+  FOLLOWED
   EXPLORE
 }
 
@@ -49,8 +49,11 @@ type PostPayload {
   authorId:       ID
   isPrivate:      Boolean
 
+  author:         UserPayload
   likeCount:      Int
+  likes:         [LikePayload]
   commentCount:   Int
+  comments:      [CommentPayload]
 
   createdAt:      String
   updatedAt:      String
@@ -69,7 +72,7 @@ type Query {
   getPosts(type: GetPostsType!, username: String, skip: Int, limit: Int):       PostsPayload
 
   # DONE: Get post by id
-  getPost(postId: ID!):                                         PostPayload
+  getPost(postId: ID!):                                                         PostPayload
 
 }
 
