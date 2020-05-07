@@ -235,12 +235,28 @@ const Query = {
       }
 
       const requestedFields = getRequestedFieldsFromInfo(info)
+      const shouldAggregateAuthor = requestedFields.some((f) => f.includes('author'))
+      const shouldAggregateLikes = requestedFields.some((f) => f.includes('likes'))
       const shouldAggregateLikeCount = requestedFields.some((f) => f.includes('likeCount'))
       const shouldAggregateCommentCount = requestedFields.some((f) => f.includes('commentCount'))
+      const shouldAggregateComments = requestedFields.some((f) => f.includes('comments'))
 
       const [post] = await Post.aggregate([
         { $match: { _id: postFound._id } },
-        ...(shouldAggregateLikeCount
+        ...(shouldAggregateAuthor
+          ? [
+              {
+                $lookup: {
+                  from: 'users',
+                  let: { authorId: '$authorId' },
+                  pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$authorId'] } } }],
+                  as: 'author'
+                }
+              },
+              { $unwind: { path: '$author', preserveNullAndEmptyArrays: true } }
+            ]
+          : []),
+        ...(shouldAggregateLikeCount || shouldAggregateLikes
           ? [
               {
                 $lookup: {
@@ -248,14 +264,30 @@ const Query = {
                   let: { postId: '$_id' },
                   pipeline: [
                     { $match: { $expr: { $eq: ['$_id.postId', '$$postId'] } } },
-                    { $project: { _id: 1 } }
+                    ...(shouldAggregateLikes
+                      ? [
+                          {
+                            $lookup: {
+                              from: 'users',
+                              let: { userId: '$_id.userId' },
+                              pipeline: [
+                                { $match: { $expr: { $eq: ['$_id', '$$userId'] } } },
+                                { $set: { id: '$_id' } }
+                              ],
+                              as: 'user'
+                            }
+                          },
+                          { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } }
+                        ]
+                      : []),
+                    { $project: { _id: 0 } }
                   ],
-                  as: 'likeCount'
+                  as: 'likes'
                 }
               }
             ]
           : []),
-        ...(shouldAggregateCommentCount
+        ...(shouldAggregateCommentCount || shouldAggregateComments
           ? [
               {
                 $lookup: {
@@ -263,22 +295,39 @@ const Query = {
                   let: { postId: '$_id' },
                   pipeline: [
                     { $match: { $expr: { $eq: ['$postId', '$$postId'] } } },
-                    { $project: { _id: 1 } }
+                    ...(shouldAggregateComments
+                      ? [
+                          {
+                            $lookup: {
+                              from: 'users',
+                              let: { authorId: '$authorId' },
+                              pipeline: [
+                                { $match: { $expr: { $eq: ['$_id', '$$authorId'] } } },
+                                { $set: { id: '$_id' } }
+                              ],
+                              as: 'author'
+                            }
+                          },
+                          { $unwind: { path: '$author', preserveNullAndEmptyArrays: true } },
+                          { $set: { id: '$_id' } }
+                        ]
+                      : [])
                   ],
-                  as: 'commentCount'
+                  as: 'comments'
                 }
               }
             ]
           : []),
-        { $addFields: { id: '$_id' } },
         {
           $set: {
+            id: '$_id',
+            ...(shouldAggregateAuthor ? { 'author.id': '$author._id' } : {}),
             ...(shouldAggregateLikeCount
               ? {
                   likeCount: {
                     $cond: {
-                      if: { $isArray: '$likeCount' },
-                      then: { $size: '$likeCount' },
+                      if: { $isArray: '$likes' },
+                      then: { $size: '$likes' },
                       else: 0
                     }
                   }
@@ -288,8 +337,8 @@ const Query = {
               ? {
                   commentCount: {
                     $cond: {
-                      if: { $isArray: '$commentCount' },
-                      then: { $size: '$commentCount' },
+                      if: { $isArray: '$comments' },
+                      then: { $size: '$comments' },
                       else: 0
                     }
                   }
@@ -298,6 +347,8 @@ const Query = {
           }
         }
       ])
+
+      console.log(post)
 
       return post
     }
