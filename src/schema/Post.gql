@@ -81,7 +81,7 @@ type Query {
 # ---------------------------------------------------------
 type Mutation {
   # DONE: Create a new post
-  createPost(input: CreatePostInput!):                          Boolean
+  createPost(input: CreatePostInput!):                          PostPayload
 
   # DONE: Update post
   updatePost(input: UpdatePostInput!):                          Boolean
