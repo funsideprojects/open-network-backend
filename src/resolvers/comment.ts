@@ -18,8 +18,20 @@ const Query = {
   ),
 
   // DONE:
-  getComments: async (root, { postId, skip, limit }, { Post, Comment }: IContext, info) => {
-    if (!(await Post.findById(postId))) throw new Error('Post not found!')
+  getComments: async (
+    root,
+    { postId, skip, limit },
+    { authUser, Post, Comment }: IContext,
+    info
+  ) => {
+    const postFound = await Post.findById(postId)
+    if (!postFound) throw new Error('Post not found!')
+
+    if (postFound.isPrivate) {
+      if (!authUser || authUser.id !== postFound.authorId.toHexString()) {
+        throw new Error('Post not found!')
+      }
+    }
 
     const requestedFields = getRequestedFieldsFromInfo(info)
     const result = {}
