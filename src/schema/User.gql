@@ -80,8 +80,8 @@ type UserPayload {
 }
 
 type UsersPayload {
+  count:                      Int
   users:                     [UserPayload]
-  count:                      Int!
 }
 
 type IsUserOnlinePayload {
