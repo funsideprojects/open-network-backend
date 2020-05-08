@@ -84,9 +84,9 @@ const Query = {
   suggestPeople: combineResolvers(
     isAuthenticated,
     async (root, args, { authUser: { id }, User, Follow }: IContext) => {
-      const SUGGEST_LIMIT = 6
+      const SUGGEST_LIMIT = 5
 
-      // Find who authUser follows
+      // Find people who authUser followed
       const currentFollowing = await Follow.find({ '_id.followerId': id })
 
       // Find random users except that authUser follows
@@ -103,7 +103,7 @@ const Query = {
 
       const randomUsers = await User.find(query).skip(random).limit(SUGGEST_LIMIT)
 
-      return randomUsers
+      return randomUsers.sort(() => Math.random() - 0.5)
     }
   ),
 
