@@ -19,6 +19,9 @@ const Query = {
     async (root, args, { authUser: { id }, User }: IContext) => {
       const userFound = await User.findById(id)
 
+      // Update it's isOnline field to true
+      await User.findOneAndUpdate({ _id: id }, { $set: { isOnline: true } })
+
       return userFound
     }
   ),
@@ -198,9 +201,6 @@ const Mutation = {
 
     const isValidPassword = await compare(password, userFound.password)
     if (!isValidPassword) throw new Error('Wrong password.')
-
-    // If user is authenticated, update it's isOnline field to true
-    await User.findOneAndUpdate({ _id: userFound._id }, { $set: { isOnline: true } })
 
     return {
       token: generateToken(

@@ -42,8 +42,6 @@ export function createApolloServer(typeDefs, resolvers, models: IModels) {
         if (user) authUser = user
       }
 
-      console.log(highlight(0, '[Current User]:'), authUser?.fullName, authUser?.id)
-
       return Object.assign({ authUser }, models)
     },
     subscriptions: {
@@ -52,11 +50,14 @@ export function createApolloServer(typeDefs, resolvers, models: IModels) {
         if (connectionParams.authorization) {
           const authUser = await checkAuthorization(connectionParams.authorization)
 
+          console.log(highlight(0, '[Connected User]:'), authUser!.id, +new Date())
+
           // *: Publish user isOnline true
           pubSub.publish(IS_USER_ONLINE, {
             isUserOnline: {
               userId: authUser!.id,
-              isOnline: true
+              isOnline: true,
+              lastActiveAt: +new Date()
             }
           })
 
@@ -68,19 +69,25 @@ export function createApolloServer(typeDefs, resolvers, models: IModels) {
         // *: Get socket's context
         const subscriptionContext: ISubscriptionContext = await context.initPromise
         if (subscriptionContext && subscriptionContext.authUser) {
+          console.log(
+            highlight(3, '[Disconnected User]:'),
+            subscriptionContext.authUser!.id,
+            +new Date()
+          )
           // *: Publish user isOnline false
           pubSub.publish(IS_USER_ONLINE, {
             isUserOnline: {
               userId: subscriptionContext.authUser.id,
-              isOnline: false
+              isOnline: false,
+              lastActiveAt: +new Date()
             }
           })
 
           // Update user isOnline and lastActiveAt
-          // await models.User.findByIdAndUpdate(subscriptionContext.authUser.id, {
-          //   isOnline: false,
-          //   lastActiveAt: new Date()
-          // })
+          await models.User.findByIdAndUpdate(subscriptionContext.authUser.id, {
+            isOnline: false,
+            lastActiveAt: new Date()
+          })
         }
       }
     }

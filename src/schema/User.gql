@@ -56,7 +56,7 @@ input UpdateUserInfoInput {
 }
 
 input UpdateUserPhotoInput {
-  image:                      Upload!
+  image:                      Upload
   isCover:                    Boolean
 }
 
