@@ -306,12 +306,18 @@ const Mutation = {
     isAuthenticated,
     async (root, { input: { image, isCover } }, { authUser: { id, username }, User }: IContext) => {
       if (image) {
+        const userFound = await User.findById(id)
+
+        if (!userFound) throw new Error('User not found!')
+
         const { imageAddress, imagePublicId } = await uploadFile(username, image)
 
         const fieldsToUpdate = {
           [isCover ? 'coverImage' : 'image']: imageAddress,
           [isCover ? 'coverImagePublicId' : 'imagePublicId']: imagePublicId
         }
+
+        removeUploadedFile(userFound[isCover ? 'coverImage' : 'image']!)
 
         // Record the file metadata in the DB.
         await User.findByIdAndUpdate(id, { $set: fieldsToUpdate })

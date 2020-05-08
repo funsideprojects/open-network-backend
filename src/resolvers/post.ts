@@ -165,6 +165,7 @@ const Query = {
                     { $match: { $expr: { $eq: ['$postId', '$$postId'] } } },
                     ...(shouldAggregateComments
                       ? [
+                          { $sort: { createdAt: -1 } },
                           {
                             $lookup: {
                               from: 'users',
@@ -297,6 +298,7 @@ const Query = {
                     { $match: { $expr: { $eq: ['$postId', '$$postId'] } } },
                     ...(shouldAggregateComments
                       ? [
+                          { $sort: { createdAt: -1 } },
                           {
                             $lookup: {
                               from: 'users',
@@ -347,8 +349,6 @@ const Query = {
           }
         }
       ])
-
-      console.log(post)
 
       return post
     }

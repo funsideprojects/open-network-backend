@@ -36,7 +36,7 @@ type Query {
   getFollowedUsers(username: String, skip: Int, limit: Int):          FollowerOrFollowingPayload
 
   # DONE: Get user's followers
-  getUserFollowers(username: String!, skip: Int, limit: Int):         FollowerOrFollowingPayload
+  getUserFollowers(username: String, skip: Int, limit: Int):         FollowerOrFollowingPayload
 }
 
 # ---------------------------------------------------------
