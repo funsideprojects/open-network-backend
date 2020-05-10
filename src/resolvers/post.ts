@@ -59,7 +59,7 @@ const Query = {
 
           query = {
             $and: [
-              // { image: { $ne: null } },
+              { image: { $ne: null } },
               {
                 authorId: {
                   $nin: [
@@ -73,10 +73,7 @@ const Query = {
           }
         } else {
           query = {
-            $and: [
-              // { image: { $ne: null } },
-              { isPrivate: false }
-            ]
+            $and: [{ image: { $ne: null } }, { isPrivate: false }]
           }
         }
 
