@@ -20,7 +20,8 @@ process.on('exit', (code) => {
 
 async function main() {
   // *_: Connect to database
-  await connectMongoDB(process.env.MONGO_URL!)
+  if (!process.env.MONGO_URL) throw new Error(`Missing environment variable: MONGO_URL`)
+  await connectMongoDB(process.env.MONGO_URL)
 
   // *_: Initializes application
   const app = express()
@@ -28,7 +29,7 @@ async function main() {
   app.use(express.static('uploads'))
 
   // *_: Enable cors
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === 'production' && process.env.FRONTEND_URL) {
     app.use(
       cors({
         origin: process.env.FRONTEND_URL,
@@ -60,8 +61,8 @@ Current directory       : ${process.cwd()}`)
 
     if (process.env.NODE_ENV === 'development') {
       console.log(`
-Server ready at http://localhost:${highlight(0, PORT!)}${server.graphqlPath}
-Subscriptions ready at ws://localhost:${highlight(0, PORT!)}${server.subscriptionsPath}
+Server ready at ${highlight(0, `http://localhost:${PORT!}${server.graphqlPath}`)}
+Subscriptions ready at ${highlight(0, `ws://localhost:${PORT!}${server.subscriptionsPath}`)}
 `)
     } else console.log(`Server is ready`)
   })
