@@ -28,12 +28,14 @@ async function main() {
   app.use(express.static('uploads'))
 
   // *_: Enable cors
-  app.use(
-    cors({
-      origin: process.env.FRONTEND_URL,
-      credentials: true
-    })
-  )
+  if (process.env.NODE_ENV === 'production') {
+    app.use(
+      cors({
+        origin: process.env.FRONTEND_URL,
+        credentials: true
+      })
+    )
+  }
 
   // *_: Create a Apollo Server
   const typeDefs = mergeTypes(fileLoader(join(__dirname, `/schema/**/*.gql`)), { all: true })

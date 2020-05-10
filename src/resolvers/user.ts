@@ -92,7 +92,6 @@ const Query = {
       // Find random users except that authUser follows
       const query = { _id: { $nin: [...currentFollowing.map(({ _id }) => _id.userId), id] } }
       const usersCount = await User.countDocuments(query)
-      /* tslint:disable-next-line */
       let random = ~~(Math.random() * usersCount)
 
       const usersLeft = usersCount - random

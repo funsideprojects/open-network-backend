@@ -97,7 +97,7 @@ const Query = {
       result['count'] = count
     }
 
-    if (requestedFields.map((f) => f.includes('posts'))) {
+    if (requestedFields.some((f) => f.includes('posts'))) {
       const shouldAggregateAuthor = requestedFields.some((f) => f.includes('posts.author'))
       const shouldAggregateLikes = requestedFields.some((f) => f.includes('posts.likes'))
       const shouldAggregateLikeCount = requestedFields.some((f) => f.includes('posts.likeCount'))
@@ -392,7 +392,9 @@ const Mutation = {
   updatePost: combineResolvers(
     isAuthenticated,
     async (root, { input: { id, title, isPrivate } }, { authUser, Post }: IContext) => {
-      if (!title && typeof isPrivate !== 'boolean') throw new Error('Nothing to update')
+      if (typeof title !== 'string' && typeof isPrivate !== 'boolean') {
+        throw new Error('Nothing to update')
+      }
       const postFound = await Post.findById(id).select({ authorId: 1 })
       if (!postFound) throw new Error('Post not found!')
       if (postFound.authorId.toHexString() !== authUser.id) throw new Error('Perrmission denied!')
@@ -400,7 +402,7 @@ const Mutation = {
       try {
         await Post.findByIdAndUpdate(id, {
           $set: {
-            ...(title ? { title } : {}),
+            ...(typeof title === 'string' ? { title } : {}),
             ...(typeof isPrivate === 'boolean' ? { isPrivate } : {})
           }
         })

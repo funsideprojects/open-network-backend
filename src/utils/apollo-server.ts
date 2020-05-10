@@ -50,7 +50,7 @@ export function createApolloServer(typeDefs, resolvers, models: IModels) {
         if (connectionParams.authorization) {
           const authUser = await checkAuthorization(connectionParams.authorization)
 
-          console.log(highlight(0, '[Connected User]:'), authUser!.id, +new Date())
+          console.log(highlight(0, '[Connected User]:'), authUser!.fullName, +new Date())
 
           // *: Publish user isOnline true
           pubSub.publish(IS_USER_ONLINE, {
@@ -71,7 +71,7 @@ export function createApolloServer(typeDefs, resolvers, models: IModels) {
         if (subscriptionContext && subscriptionContext.authUser) {
           console.log(
             highlight(3, '[Disconnected User]:'),
-            subscriptionContext.authUser!.id,
+            subscriptionContext.authUser!.fullName,
             +new Date()
           )
           // *: Publish user isOnline false

@@ -33,6 +33,7 @@
     "one-line": [true, "check-catch", "check-finally", "check-else"],
     "one-variable-per-declaration": true,
     "no-string-literal": false,
+    "no-bitwise": false,
     "no-console": [true, "warn", "error"],
     "no-string-throw": true,
     "object-literal-key-quotes": [true, "as-needed"],
