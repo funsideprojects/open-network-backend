@@ -4,6 +4,9 @@
 type Comment {
   id:               ID!
   comment:          String!
+  image:            String
+  imagePublicId:    String
+  stickerId:        ID
   postId:           ID!
   authorId:         ID!
 
@@ -15,13 +18,16 @@ type Comment {
 # *_: Input Objects
 # ---------------------------------------------------------
 input CreateCommentInput {
-  comment:          String!
+  comment:          String
+  image:            Upload
+  stickerId:        ID
   postId:           ID!
 }
 
 input UpdateCommentInput {
   id:               ID!
-  comment:          String!
+  comment:          String
+
 }
 
 input DeleteCommentInput {
@@ -34,6 +40,10 @@ input DeleteCommentInput {
 type CommentPayload {
   id:               ID
   comment:          String
+  image:            String
+  imagePublicId:    String
+  stickerId:        ID
+  sticker:          StickerPayload
   postId:           ID
   post:             PostPayload
   authorId:         ID

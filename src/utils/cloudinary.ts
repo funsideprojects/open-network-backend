@@ -1,3 +1,5 @@
+// DEPRECATED:
+
 import { v2 as cloudinary } from 'cloudinary'
 import { v4 as uuid } from 'uuid'
 

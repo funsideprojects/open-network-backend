@@ -16,9 +16,6 @@ export interface IUser extends Document {
   lastActiveAt: string
 }
 
-/**
- * User schema that has references to Post, Like, Comment, Follow and Notification schemas
- */
 const userSchema = new Schema(
   {
     fullName: {

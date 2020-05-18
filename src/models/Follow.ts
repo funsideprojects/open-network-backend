@@ -8,9 +8,6 @@ export interface IFollow extends Document {
   }
 }
 
-/**
- * Follow schema that has references to User schema
- */
 const followSchema = new Schema(
   {
     _id: {

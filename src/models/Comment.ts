@@ -3,18 +3,24 @@ import { ObjectId } from 'mongodb'
 
 export interface IComment extends Document {
   comment: string
+  image: string
+  imagePublicId: string
+  stickerId: ObjectId
   postId: ObjectId
   authorId: ObjectId
 }
 
-/**
- * Comments schema that has reference to Post and user schemas
- */
 const commentSchema = new Schema(
   {
     comment: {
       type: String,
       required: true
+    },
+    image: String,
+    imagePublicId: String,
+    stickerId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Sticker'
     },
     postId: {
       type: Schema.Types.ObjectId,

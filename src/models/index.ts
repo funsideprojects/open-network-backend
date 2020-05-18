@@ -4,6 +4,9 @@ import Like from './Like'
 import Message from './Message'
 import Notification from './Notification'
 import Post from './Post'
+import Setting from './Setting'
+import Sticker from './Sticker'
+import StickerCollection from './StickerCollection'
 import User from './User'
 
 export interface IModels {
@@ -13,6 +16,9 @@ export interface IModels {
   Message: typeof Message
   Notification: typeof Notification
   Post: typeof Post
+  Setting: typeof Setting
+  Sticker: typeof Sticker
+  StickerCollection: typeof StickerCollection
   User: typeof User
 }
 
@@ -23,5 +29,8 @@ export default {
   Message,
   Notification,
   Post,
+  Setting,
+  Sticker,
+  StickerCollection,
   User
 }

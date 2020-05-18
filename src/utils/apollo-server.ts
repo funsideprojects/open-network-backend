@@ -86,7 +86,7 @@ export function createApolloServer(typeDefs, resolvers, models: IModels) {
           // Update user isOnline and lastActiveAt
           await models.User.findByIdAndUpdate(subscriptionContext.authUser.id, {
             isOnline: false,
-            lastActiveAt: new Date()
+            lastActiveAt: new Date().toDateString()
           })
         }
       }

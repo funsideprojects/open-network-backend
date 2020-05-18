@@ -1,22 +1,22 @@
 import { Document, Schema, model } from 'mongoose'
 import { ObjectId } from 'mongodb'
 
-export interface IPost extends Document {
-  title: string
+export interface IPostImage {
   image: string
   imagePublicId: string
+}
+
+export interface IPost extends Document {
+  title: string
+  images: IPostImage
   authorId: ObjectId
   isPrivate: boolean
 }
 
-/**
- * Post schema that has references to User, Like and Comment schemas
- */
 const postSchema = new Schema(
   {
     title: String,
-    image: String,
-    imagePublicId: String,
+    images: [{ type: Object }],
     authorId: {
       type: Schema.Types.ObjectId,
       ref: 'User'

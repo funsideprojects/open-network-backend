@@ -5,17 +5,18 @@ function getField(
   selectionSet?: SelectionSetNode,
   fieldName?: string
 ) {
-  if (selectionSet?.selections)
+  if (selectionSet?.selections) {
     return selectionSet?.selections.flatMap((fn) => {
       switch (fn.kind) {
         case 'Field': {
           const concatenatedFieldName = `${fieldName ? `${fieldName}.` : ''}${fn.name.value}`
-          if (fn.selectionSet)
+          if (fn.selectionSet) {
             return getField(
               fragments,
               fn.selectionSet,
               fieldName ? concatenatedFieldName : fn.name.value
             )
+          }
 
           return concatenatedFieldName
         }
@@ -34,15 +35,17 @@ function getField(
         }
       }
     })
+  }
 
   return undefined
 }
 
 export function getRequestedFieldsFromInfo({ fieldNodes, fragments }: GraphQLResolveInfo) {
-  if (fieldNodes.length)
+  if (fieldNodes.length) {
     return fieldNodes
       .flatMap(({ selectionSet }) => getField(fragments, selectionSet))
       .filter((field) => typeof field !== 'undefined')
+  }
 
   return []
 }

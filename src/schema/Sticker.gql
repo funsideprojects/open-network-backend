@@ -1,0 +1,119 @@
+# ---------------------------------------------------------
+# *_: Model Objects
+# ---------------------------------------------------------
+type StickerCollection {
+  id:                       ID!
+  thumbnailImage:           String!
+  thumbnailImagePublicId:   String!
+  name:                     String!
+  description:              String
+  authorId:                 ID!
+  isPrivate:                Boolean!
+
+  createdAt:                String!
+  updatedAt:                String
+}
+
+type Sticker {
+  image:                    String!
+  imagePublicId:            String!
+  name:                     String!
+  collectionId:             ID!
+
+  createdAt:                String!
+  updatedAt:                String
+}
+
+# ---------------------------------------------------------
+# *_: Input Objects
+# ---------------------------------------------------------
+input CreateStickerCollectionInput {
+  thumbnailImage:           Upload!
+  name:                     String!
+  isPrivate:                Boolean!
+
+  stickers:                [CreateStickerInput]
+}
+
+input CreateStickerInput {
+  image:                    Upload!
+  name:                     String!
+}
+
+input UpdateStickerCollectionInput {
+  id:                       ID!
+  operation:                UpdateStickerCollectionType!
+  stickerIds:              [ID]
+}
+
+enum UpdateStickerCollectionType {
+  ADD
+  DELETE
+}
+
+input DeleteStickerCollectionInput {
+  id:                       ID!
+}
+
+# ---------------------------------------------------------
+# *_: Return Payloads
+# ---------------------------------------------------------
+type StickerCollectionPayload {
+  id:                       ID
+  thumbnailImage:           String
+  thumbnailImagePublicId:   String
+  name:                     String
+  description:              String
+  authorId:                 ID
+  author:                   UserPayload
+  isPrivate:                Boolean
+
+  stickers:                [StickerPayload]
+
+  createdAt:                String
+  updatedAt:                String
+}
+
+type StickerCollectionsPayload {
+  count:                    Int
+  stickerCollections:      [StickerCollectionPayload]
+}
+
+type StickerPayload {
+  image:                    String
+  imagePublicId:            String
+  name:                     String
+  collectionId:             ID
+
+  createdAt:                String
+  updatedAt:                String
+}
+
+# ---------------------------------------------------------
+# *_: Queries
+# ---------------------------------------------------------
+type Query {
+  # TODO:
+  getStickerCollections(skip: Int, limit: Int):                         StickerCollectionsPayload
+
+  # TODO:
+  getInstalledStickerCollections(skip: Int, limit: Int):                StickerCollectionsPayload
+}
+
+# ---------------------------------------------------------
+# *_: Mutations
+# ---------------------------------------------------------
+type Mutation {
+  # TODO:
+  createStickerCollection(input: CreateStickerCollectionInput!):          Boolean
+
+  # TODO:
+  updateStickerCollection(input: UpdateStickerCollectionInput!):          Boolean
+
+  # TODO:
+  deleteStickerCollection(input: DeleteStickerCollectionInput!):          Boolean
+}
+
+# ---------------------------------------------------------
+# *_: Subscriptions
+# ---------------------------------------------------------

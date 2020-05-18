@@ -9,9 +9,6 @@ export interface INotification extends Document {
   seen: boolean
 }
 
-/**
- * Notification schema that has references to User, Like, Follow and Comment schemas
- */
 const notificationSchema = new Schema(
   {
     type: {

@@ -5,23 +5,29 @@ export interface IMessage extends Document {
   senderId: ObjectId
   receiverId: ObjectId
   message: string
+  image: string
+  imagePublicId: string
+  stickerId: ObjectId
   seen: Array<ObjectId>
 }
 
-/**
- * Message schema that has reference to user schema
- */
 const messageSchema = new Schema(
   {
     senderId: {
       type: Schema.Types.ObjectId,
       ref: 'User'
     },
-    receiverId: {
+    recipientId: {
       type: Schema.Types.ObjectId,
       ref: 'User'
     },
     message: String,
+    image: String,
+    imagePublicId: String,
+    stickerId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Sticker'
+    },
     seen: [
       {
         type: Schema.Types.ObjectId,

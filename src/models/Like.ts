@@ -8,9 +8,6 @@ export interface ILike extends Document {
   }
 }
 
-/**
- * Like schema that has references to Post and User schema
- */
 const likeSchema = new Schema(
   {
     _id: {

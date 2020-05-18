@@ -20,12 +20,6 @@ type User {
   updatedAt:                  String
 }
 
-type File {
-  filename:                   String
-  mimetype:                   String
-  encoding:                   String
-}
-
 # ---------------------------------------------------------
 # *_: Input Objects
 # ---------------------------------------------------------
