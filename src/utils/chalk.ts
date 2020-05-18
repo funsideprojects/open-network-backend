@@ -11,7 +11,7 @@ type MessageType = 0 | 1 | 2 | 3
  * @param {String} message
  */
 export function highlight(type: MessageType, message: string) {
-  let colorCode
+  let colorCode: string
   switch (type) {
     case 0:
       colorCode = '#52c41a'
