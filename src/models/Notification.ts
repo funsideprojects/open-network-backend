@@ -13,27 +13,27 @@ const notificationSchema = new Schema(
   {
     type: {
       type: String,
-      required: true
+      required: true,
     },
     additionalData: String,
     fromId: {
       type: Schema.Types.ObjectId,
       required: true,
-      ref: 'User'
+      ref: 'User',
     },
     toId: {
       type: Schema.Types.ObjectId,
       required: true,
-      ref: 'User'
+      ref: 'User',
     },
     seen: {
       type: Boolean,
       required: true,
-      default: false
-    }
+      default: false,
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 )
 

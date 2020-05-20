@@ -4,7 +4,7 @@ import { Types } from 'mongoose'
 
 import { IContext } from 'utils/apollo-server'
 
-import { getRequestedFieldsFromInfo, uploadFile, removeUploadedFile } from './functions'
+import { getRequestedFieldsFromInfo, uploadFiles, removeUploadedFiles } from './functions'
 import { isAuthenticated } from './high-order-resolvers'
 
 // *_:
@@ -25,8 +25,8 @@ const Query = {
         query = {
           $and: [
             { authorId: userFound._id },
-            ...(authUser?.id !== userFound.id ? [{ isPrivate: false }] : [])
-          ]
+            ...(authUser?.id !== userFound.id ? [{ isPrivate: false }] : []),
+          ],
         }
 
         break
@@ -41,13 +41,13 @@ const Query = {
             {
               $and: [
                 { authorId: { $in: [...currentFollowing.map(({ _id }) => _id.userId)] } },
-                { isPrivate: false }
-              ]
+                { isPrivate: false },
+              ],
             },
             {
-              authorId: Types.ObjectId(authUser.id)
-            }
-          ]
+              authorId: Types.ObjectId(authUser.id),
+            },
+          ],
         }
 
         break
@@ -64,16 +64,16 @@ const Query = {
                 authorId: {
                   $nin: [
                     ...currentFollowing.map(({ _id }) => _id.userId),
-                    Types.ObjectId(authUser.id)
-                  ]
-                }
+                    Types.ObjectId(authUser.id),
+                  ],
+                },
               },
-              { isPrivate: false }
-            ]
+              { isPrivate: false },
+            ],
           }
         } else {
           query = {
-            $and: [{ image: { $ne: null } }, { isPrivate: false }]
+            $and: [{ image: { $ne: null } }, { isPrivate: false }],
           }
         }
 
@@ -115,10 +115,10 @@ const Query = {
                   from: 'users',
                   let: { authorId: '$authorId' },
                   pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$authorId'] } } }],
-                  as: 'author'
-                }
+                  as: 'author',
+                },
               },
-              { $unwind: { path: '$author', preserveNullAndEmptyArrays: true } }
+              { $unwind: { path: '$author', preserveNullAndEmptyArrays: true } },
             ]
           : []),
         ...(shouldAggregateLikeCount || shouldAggregateLikes
@@ -137,19 +137,19 @@ const Query = {
                               let: { userId: '$_id.userId' },
                               pipeline: [
                                 { $match: { $expr: { $eq: ['$_id', '$$userId'] } } },
-                                { $set: { id: '$_id' } }
+                                { $set: { id: '$_id' } },
                               ],
-                              as: 'user'
-                            }
+                              as: 'user',
+                            },
                           },
-                          { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } }
+                          { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
                         ]
                       : []),
-                    { $project: { _id: 0 } }
+                    { $project: { _id: 0 } },
                   ],
-                  as: 'likes'
-                }
-              }
+                  as: 'likes',
+                },
+              },
             ]
           : []),
         ...(shouldAggregateCommentCount || shouldAggregateComments
@@ -169,19 +169,19 @@ const Query = {
                               let: { authorId: '$authorId' },
                               pipeline: [
                                 { $match: { $expr: { $eq: ['$_id', '$$authorId'] } } },
-                                { $set: { id: '$_id' } }
+                                { $set: { id: '$_id' } },
                               ],
-                              as: 'author'
-                            }
+                              as: 'author',
+                            },
                           },
                           { $unwind: { path: '$author', preserveNullAndEmptyArrays: true } },
-                          { $set: { id: '$_id' } }
+                          { $set: { id: '$_id' } },
                         ]
-                      : [])
+                      : []),
                   ],
-                  as: 'comments'
-                }
-              }
+                  as: 'comments',
+                },
+              },
             ]
           : []),
         {
@@ -194,9 +194,9 @@ const Query = {
                     $cond: {
                       if: { $isArray: '$likes' },
                       then: { $size: '$likes' },
-                      else: 0
-                    }
-                  }
+                      else: 0,
+                    },
+                  },
                 }
               : {}),
             ...(shouldAggregateCommentCount
@@ -205,13 +205,13 @@ const Query = {
                     $cond: {
                       if: { $isArray: '$comments' },
                       then: { $size: '$comments' },
-                      else: 0
-                    }
-                  }
+                      else: 0,
+                    },
+                  },
                 }
-              : {})
-          }
-        }
+              : {}),
+          },
+        },
       ])
 
       result['posts'] = posts
@@ -248,10 +248,10 @@ const Query = {
                   from: 'users',
                   let: { authorId: '$authorId' },
                   pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$authorId'] } } }],
-                  as: 'author'
-                }
+                  as: 'author',
+                },
               },
-              { $unwind: { path: '$author', preserveNullAndEmptyArrays: true } }
+              { $unwind: { path: '$author', preserveNullAndEmptyArrays: true } },
             ]
           : []),
         ...(shouldAggregateLikeCount || shouldAggregateLikes
@@ -270,19 +270,19 @@ const Query = {
                               let: { userId: '$_id.userId' },
                               pipeline: [
                                 { $match: { $expr: { $eq: ['$_id', '$$userId'] } } },
-                                { $set: { id: '$_id' } }
+                                { $set: { id: '$_id' } },
                               ],
-                              as: 'user'
-                            }
+                              as: 'user',
+                            },
                           },
-                          { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } }
+                          { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
                         ]
                       : []),
-                    { $project: { _id: 0 } }
+                    { $project: { _id: 0 } },
                   ],
-                  as: 'likes'
-                }
-              }
+                  as: 'likes',
+                },
+              },
             ]
           : []),
         ...(shouldAggregateCommentCount || shouldAggregateComments
@@ -302,19 +302,19 @@ const Query = {
                               let: { authorId: '$authorId' },
                               pipeline: [
                                 { $match: { $expr: { $eq: ['$_id', '$$authorId'] } } },
-                                { $set: { id: '$_id' } }
+                                { $set: { id: '$_id' } },
                               ],
-                              as: 'author'
-                            }
+                              as: 'author',
+                            },
                           },
                           { $unwind: { path: '$author', preserveNullAndEmptyArrays: true } },
-                          { $set: { id: '$_id' } }
+                          { $set: { id: '$_id' } },
                         ]
-                      : [])
+                      : []),
                   ],
-                  as: 'comments'
-                }
-              }
+                  as: 'comments',
+                },
+              },
             ]
           : []),
         {
@@ -327,9 +327,9 @@ const Query = {
                     $cond: {
                       if: { $isArray: '$likes' },
                       then: { $size: '$likes' },
-                      else: 0
-                    }
-                  }
+                      else: 0,
+                    },
+                  },
                 }
               : {}),
             ...(shouldAggregateCommentCount
@@ -338,18 +338,18 @@ const Query = {
                     $cond: {
                       if: { $isArray: '$comments' },
                       then: { $size: '$comments' },
-                      else: 0
-                    }
-                  }
+                      else: 0,
+                    },
+                  },
                 }
-              : {})
-          }
-        }
+              : {}),
+          },
+        },
       ])
 
       return post
     }
-  )
+  ),
 }
 
 // *_:
@@ -359,26 +359,44 @@ const Mutation = {
     isAuthenticated,
     async (
       root,
-      { input: { title, image, isPrivate = false } },
-      { authUser: { id, username }, Post }: IContext
+      { input: { title, images, isPrivate } },
+      { authUser: { id, username }, Post, File }: IContext
     ) => {
-      if (!title && !image) throw new Error('Post title or image is required.')
+      if (typeof isPrivate !== 'boolean') throw new Error('Post privacy is required.')
+      if (!title && !images.length) throw new Error('Post title or image is required.')
 
-      let imageUrl
-      let imagePublicId
-      if (image) {
-        const uploadedResult = await uploadFile(username, image)
+      let uploadedImages
 
-        imageUrl = uploadedResult.imageAddress
-        imagePublicId = uploadedResult.imagePublicId
+      if (images.length) {
+        const uploadedFiles = await uploadFiles(username, images, ['image', 'video'])
+        if (!uploadedFiles.length) throw new Error('')
+
+        uploadedImages = uploadedFiles.map(({ fileAddress, filePublicId }) => ({
+          image: fileAddress,
+          imagePublicId: filePublicId,
+        }))
+
+        await File.insertMany(
+          uploadedFiles.map(
+            ({ filename, mimetype, encoding, filePublicId, fileSize }) =>
+              new File({
+                publicId: filePublicId,
+                filename,
+                mimetype,
+                encoding,
+                size: fileSize,
+                type: 'Post',
+                userId: id,
+              })
+          )
+        )
       }
 
       const newPost = await new Post({
         title,
-        image: imageUrl,
-        imagePublicId,
+        images: uploadedImages,
         authorId: id,
-        isPrivate
+        isPrivate,
       }).save()
 
       return newPost
@@ -400,8 +418,8 @@ const Mutation = {
         await Post.findByIdAndUpdate(id, {
           $set: {
             ...(typeof title === 'string' ? { title } : {}),
-            ...(typeof isPrivate === 'boolean' ? { isPrivate } : {})
-          }
+            ...(typeof isPrivate === 'boolean' ? { isPrivate } : {}),
+          },
         })
 
         return true
@@ -420,8 +438,10 @@ const Mutation = {
         if (!postFound) throw new Error('Post not found!')
 
         // Remove post image from upload
-        if (postFound.image) {
-          removeUploadedFile(postFound.image)
+        if (postFound.images) {
+          removeUploadedFiles(
+            postFound.images.map((image) => ({ fileType: 'image', fileAddress: image.image }))
+          )
         }
 
         // Find post and remove it
@@ -441,7 +461,7 @@ const Mutation = {
         return false
       }
     }
-  )
+  ),
 }
 
 export default { Query, Mutation }

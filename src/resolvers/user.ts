@@ -49,8 +49,8 @@ const Query = {
       const query = {
         $and: [
           { _id: { $ne: authUser.id } },
-          { _id: { $nin: currentFollowing.map(({ _id }) => _id.userId) } }
-        ]
+          { _id: { $nin: currentFollowing.map(({ _id }) => _id.userId) } },
+        ],
       }
       const count = await User.countDocuments(query)
       const users = await User.find(query).skip(skip).limit(limit).sort({ createdAt: 'desc' })
@@ -69,11 +69,11 @@ const Query = {
       const users = User.find({
         $or: [
           { username: new RegExp(searchQuery, 'i') },
-          { fullName: new RegExp(searchQuery, 'i') }
+          { fullName: new RegExp(searchQuery, 'i') },
         ],
         _id: {
-          $ne: id
-        }
+          $ne: id,
+        },
       }).limit(50)
 
       return users
@@ -113,13 +113,13 @@ const Query = {
       email,
       passwordResetToken: token,
       passwordResetTokenExpiry: {
-        $gte: Date.now() - RESET_PASSWORD_TOKEN_EXPIRY
-      }
+        $gte: Date.now() - RESET_PASSWORD_TOKEN_EXPIRY,
+      },
     })
     if (!userFound) throw new Error('This token is either invalid or expired!')
 
     return { message: 'Success' }
-  }
+  },
 }
 
 // *_:
@@ -165,7 +165,7 @@ const Mutation = {
       'explore',
       'people',
       'notifications',
-      'post'
+      'post',
     ]
     if (frontEndPages.includes(username)) {
       throw new Error(`This username isn't available. Please try another.`)
@@ -179,7 +179,7 @@ const Mutation = {
       email,
       username,
       password,
-      lastActiveAt: new Date()
+      lastActiveAt: new Date(),
     }).save()
 
     return {
@@ -187,14 +187,14 @@ const Mutation = {
         { id: newUser.id, email, username, fullName },
         process.env.SECRET!,
         AUTH_TOKEN_EXPIRY
-      )
+      ),
     }
   },
 
   // DONE:
   signin: async (root, { input: { emailOrUsername, password } }, { User }: IContext) => {
     const userFound = await User.findOne({
-      $or: [{ email: emailOrUsername }, { username: emailOrUsername }]
+      $or: [{ email: emailOrUsername }, { username: emailOrUsername }],
     })
     if (!userFound) throw new Error(`Username or email hasn't been registered`)
 
@@ -207,11 +207,11 @@ const Mutation = {
           id: userFound.id,
           email: userFound.email,
           username: userFound.username,
-          fullName: userFound.fullName
+          fullName: userFound.fullName,
         },
         process.env.SECRET!,
         AUTH_TOKEN_EXPIRY
-      )
+      ),
     }
   },
 
@@ -238,14 +238,14 @@ const Mutation = {
     const mailOptions = {
       to: email,
       subject: 'Password Reset',
-      html: resetLink
+      html: resetLink,
     }
 
     await sendEmail(mailOptions)
 
     // Return success message
     return {
-      message: `A link to reset your password has been sent to ${email}`
+      message: `A link to reset your password has been sent to ${email}`,
     }
   },
 
@@ -262,10 +262,10 @@ const Mutation = {
         { passwordResetToken: token },
         {
           passwordResetTokenExpiry: {
-            $gte: Date.now() - RESET_PASSWORD_TOKEN_EXPIRY
-          }
-        }
-      ]
+            $gte: Date.now() - RESET_PASSWORD_TOKEN_EXPIRY,
+          },
+        },
+      ],
     })
     if (!userFound) throw new Error('This token is either invalid or expired!.')
 
@@ -281,7 +281,7 @@ const Mutation = {
         { id: userFound.id, email, username: userFound.username, fullName: userFound.fullName },
         process.env.SECRET!,
         AUTH_TOKEN_EXPIRY
-      )
+      ),
     }
   },
 
@@ -309,14 +309,16 @@ const Mutation = {
 
         if (!userFound) throw new Error('User not found!')
 
-        const { imageAddress, imagePublicId } = await uploadFile(username, image)
+        const uploadedFile = await uploadFile(username, image, ['image'])
+
+        if (!uploadedFile) throw new Error('Failed to update Avatar, try again later')
 
         const fieldsToUpdate = {
-          [isCover ? 'coverImage' : 'image']: imageAddress,
-          [isCover ? 'coverImagePublicId' : 'imagePublicId']: imagePublicId
+          [isCover ? 'coverImage' : 'image']: uploadedFile.fileAddress,
+          [isCover ? 'coverImagePublicId' : 'imagePublicId']: uploadedFile.filePublicId,
         }
 
-        removeUploadedFile(userFound[isCover ? 'coverImage' : 'image']!)
+        removeUploadedFile('image', userFound[isCover ? 'coverImage' : 'image']!)
 
         // Record the file metadata in the DB.
         await User.findByIdAndUpdate(id, { $set: fieldsToUpdate })
@@ -325,21 +327,21 @@ const Mutation = {
       } else {
         const fieldsToUpdate = {
           [isCover ? 'coverImage' : 'image']: undefined,
-          [isCover ? 'coverImagePublicId' : 'imagePublicId']: undefined
+          [isCover ? 'coverImagePublicId' : 'imagePublicId']: undefined,
         }
 
         const userFound = await User.findByIdAndUpdate(id, {
-          $set: fieldsToUpdate
+          $set: fieldsToUpdate,
         })
 
         if (userFound) {
-          removeUploadedFile(userFound[isCover ? 'coverImage' : 'image']!)
+          removeUploadedFile('image', userFound[isCover ? 'coverImage' : 'image']!)
         }
 
         return fieldsToUpdate
       }
     }
-  )
+  ),
 }
 
 // *_:
@@ -349,8 +351,8 @@ const Subscription = {
     subscribe: withFilter(
       () => pubSub.asyncIterator(IS_USER_ONLINE),
       (payload, variables, _context) => variables.userId === payload.isUserOnline.userId
-    )
-  }
+    ),
+  },
 }
 
 export default { Query, Mutation, Subscription }

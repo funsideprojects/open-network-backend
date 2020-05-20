@@ -13,16 +13,16 @@ const likeSchema = new Schema(
     _id: {
       postId: {
         type: Schema.Types.ObjectId,
-        ref: 'Post'
+        ref: 'Post',
       },
       userId: {
         type: Schema.Types.ObjectId,
-        ref: 'User'
-      }
-    }
+        ref: 'User',
+      },
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 )
 

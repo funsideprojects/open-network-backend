@@ -29,7 +29,7 @@ export function createApolloServer(typeDefs, resolvers, models: IModels) {
   return new ApolloServer({
     uploads: {
       maxFileSize: 10000000, // 10 MB
-      maxFiles: 20
+      maxFiles: 20,
     },
     typeDefs,
     resolvers,
@@ -57,8 +57,8 @@ export function createApolloServer(typeDefs, resolvers, models: IModels) {
             isUserOnline: {
               userId: authUser!.id,
               isOnline: true,
-              lastActiveAt: +new Date()
-            }
+              lastActiveAt: +new Date(),
+            },
           })
 
           // Add authUser to socket's context, so we have access to it, in onDisconnect method
@@ -79,17 +79,17 @@ export function createApolloServer(typeDefs, resolvers, models: IModels) {
             isUserOnline: {
               userId: subscriptionContext.authUser.id,
               isOnline: false,
-              lastActiveAt: +new Date()
-            }
+              lastActiveAt: +new Date(),
+            },
           })
 
           // Update user isOnline and lastActiveAt
           await models.User.findByIdAndUpdate(subscriptionContext.authUser.id, {
             isOnline: false,
-            lastActiveAt: new Date().toDateString()
+            lastActiveAt: new Date().toDateString(),
           })
         }
-      }
-    }
+      },
+    },
   })
 }

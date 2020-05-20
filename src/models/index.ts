@@ -1,4 +1,5 @@
 import Comment from './Comment'
+import File from './File'
 import Follow from './Follow'
 import Like from './Like'
 import Message from './Message'
@@ -11,6 +12,7 @@ import User from './User'
 
 export interface IModels {
   Comment: typeof Comment
+  File: typeof File
   Follow: typeof Follow
   Like: typeof Like
   Message: typeof Message
@@ -24,6 +26,7 @@ export interface IModels {
 
 export default {
   Comment,
+  File,
   Follow,
   Like,
   Message,

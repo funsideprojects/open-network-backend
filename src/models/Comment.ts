@@ -14,25 +14,25 @@ const commentSchema = new Schema(
   {
     comment: {
       type: String,
-      required: true
+      required: true,
     },
     image: String,
     imagePublicId: String,
     stickerId: {
       type: Schema.Types.ObjectId,
-      ref: 'Sticker'
+      ref: 'Sticker',
     },
     postId: {
       type: Schema.Types.ObjectId,
-      ref: 'Post'
+      ref: 'Post',
     },
     authorId: {
       type: Schema.Types.ObjectId,
-      ref: 'User'
-    }
+      ref: 'User',
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 )
 

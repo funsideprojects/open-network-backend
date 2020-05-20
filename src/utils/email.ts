@@ -9,8 +9,8 @@ const transporter = createTransport({
   service: MAIL_SERVICE,
   auth: {
     user: MAIL_USER,
-    pass: MAIL_PASS
-  }
+    pass: MAIL_PASS,
+  },
 })
 
 /**
@@ -26,7 +26,7 @@ export const sendEmail = ({ to, subject, html }) => {
 
     return transporter
       .sendMail(options)
-      .then(response => resolve(response.data))
-      .catch(error => reject(error))
+      .then((response) => resolve(response.data))
+      .catch((error) => reject(error))
   })
 }

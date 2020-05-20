@@ -48,7 +48,7 @@ input UpdateStickerCollectionInput {
 
 enum UpdateStickerCollectionType {
   ADD
-  DELETE
+  REMOVE
 }
 
 input DeleteStickerCollectionInput {

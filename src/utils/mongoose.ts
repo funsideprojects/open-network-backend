@@ -9,7 +9,7 @@ export async function connectMongoDB(mongoUrl: string) {
     .connect(mongoUrl, {
       useNewUrlParser: true,
       useFindAndModify: false,
-      useUnifiedTopology: true
+      useUnifiedTopology: true,
     })
     .then(() => {
       console.log(`${highlight(0, '✓')} Database connected (URL: ${highlight(0, mongoUrl)})`)

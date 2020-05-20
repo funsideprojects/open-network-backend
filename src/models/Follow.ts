@@ -13,16 +13,16 @@ const followSchema = new Schema(
     _id: {
       userId: {
         type: Schema.Types.ObjectId,
-        ref: 'User'
+        ref: 'User',
       },
       followerId: {
         type: Schema.Types.ObjectId,
-        ref: 'User'
-      }
-    }
+        ref: 'User',
+      },
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 )
 

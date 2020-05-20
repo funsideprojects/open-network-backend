@@ -2,38 +2,44 @@
 # *_: Model Objects
 # ---------------------------------------------------------
 type Post {
-  id:             ID!
-  title:          String
-  images:        [PostImage]
-  authorId:       ID!
-  isPrivate:      Boolean!
+  id:                 ID!
+  title:              String
+  images:            [PostImage]
+  authorId:           ID!
+  isPrivate:          Boolean!
 
-  createdAt:      String!
-  updatedAt:      String
+  createdAt:          String!
+  updatedAt:          String
 }
 
 type PostImage {
-  image:          String
-  imagePublicId:  String
+  image:              String
+  imagePublicId:      String
 }
 
 # ---------------------------------------------------------
 # *_: Input Objects
 # ---------------------------------------------------------
 input CreatePostInput {
-  title:          String
-  images:        [Upload]
-  isPrivate:      Boolean!
+  title:              String
+  images:            [Upload]
+  isPrivate:          Boolean!
 }
 
 input UpdatePostInput {
-  id:             ID!
-  title:          String
-  isPrivate:      Boolean
+  id:                 ID!
+  title:              String
+  isPrivate:          Boolean
+}
+
+input UpdatePostImagesInput {
+  operation:          UpdatePostImageType!
+  images:            [Upload]
+  imagesPublicId:    [String]
 }
 
 input DeletePostInput {
-  id:             ID!
+  id:                 ID!
 }
 
 enum GetPostsType {
@@ -42,30 +48,39 @@ enum GetPostsType {
   EXPLORE
 }
 
+enum UpdatePostImageType {
+  ADD
+  REMOVE
+}
+
 # ---------------------------------------------------------
 # *_: Return Payloads
 # ---------------------------------------------------------
 type PostPayload {
-  id:             ID
-  title:          String
-  image:          String
-  imagePublicId:  String
-  authorId:       ID
-  isPrivate:      Boolean
+  id:                 ID
+  title:              String
+  images:            [PostImagePayload]
+  authorId:           ID
+  isPrivate:          Boolean
 
-  author:         UserPayload
-  likeCount:      Int
-  likes:         [LikePayload]
-  commentCount:   Int
-  comments:      [CommentPayload]
+  author:             UserPayload
+  likeCount:          Int
+  likes:             [LikePayload]
+  commentCount:       Int
+  comments:          [CommentPayload]
 
-  createdAt:      String
-  updatedAt:      String
+  createdAt:          String
+  updatedAt:          String
+}
+
+type PostImagePayload {
+  image:              String
+  imagePublicId:      String
 }
 
 type PostsPayload {
-  count:          Int!
-  posts:         [PostPayload]!
+  count:              Int!
+  posts:             [PostPayload]!
 }
 
 # ---------------------------------------------------------
@@ -89,6 +104,9 @@ type Mutation {
 
   # DONE: Update post
   updatePost(input: UpdatePostInput!):                          Boolean
+
+  # TODO: Update post's images
+  updatePostImages(input: UpdatePostImagesInput!):              Boolean
 
   # FIXME: Delete a user post
   deletePost(input: DeletePostInput!):                          Boolean

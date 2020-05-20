@@ -15,28 +15,28 @@ const messageSchema = new Schema(
   {
     senderId: {
       type: Schema.Types.ObjectId,
-      ref: 'User'
+      ref: 'User',
     },
     recipientId: {
       type: Schema.Types.ObjectId,
-      ref: 'User'
+      ref: 'User',
     },
     message: String,
     image: String,
     imagePublicId: String,
     stickerId: {
       type: Schema.Types.ObjectId,
-      ref: 'Sticker'
+      ref: 'Sticker',
     },
     seen: [
       {
         type: Schema.Types.ObjectId,
-        ref: 'User'
-      }
-    ]
+        ref: 'User',
+      },
+    ],
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 )
 
