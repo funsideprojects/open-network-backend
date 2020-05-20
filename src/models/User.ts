@@ -20,25 +20,25 @@ const userSchema = new Schema(
   {
     fullName: {
       type: String,
-      required: true
+      required: true,
     },
     email: {
       type: String,
       required: true,
       lowercase: true,
       trim: true,
-      unique: true
+      unique: true,
     },
     username: {
       type: String,
       required: true,
       lowercase: true,
       trim: true,
-      unique: true
+      unique: true,
     },
     password: {
       type: String,
-      required: true
+      required: true,
     },
     passwordResetToken: String,
     passwordResetTokenExpiry: Number,
@@ -48,17 +48,17 @@ const userSchema = new Schema(
     coverImagePublicId: String,
     isOnline: {
       type: Boolean,
-      default: false
+      default: false,
     },
-    lastActiveAt: Date
+    lastActiveAt: Date,
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 )
 
 /**
- * Hashes the users password when saving it to DB
+ * Hashe the users password when saving it to DB
  */
 userSchema.pre('save', function (next) {
   if (!this.isModified('password')) return next()

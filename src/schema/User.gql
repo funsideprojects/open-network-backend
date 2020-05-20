@@ -1,6 +1,7 @@
 # ---------------------------------------------------------
 # *_: Model Objects
 # ---------------------------------------------------------
+
 type User {
   id:                         ID!
   fullName:                   String!
@@ -23,6 +24,7 @@ type User {
 # ---------------------------------------------------------
 # *_: Input Objects
 # ---------------------------------------------------------
+
 input SignInInput {
   emailOrUsername:            String!
   password:                   String!
@@ -57,6 +59,7 @@ input UpdateUserPhotoInput {
 # ---------------------------------------------------------
 # *_: Return Payloads
 # ---------------------------------------------------------
+
 type UserPayload {
   id:                         ID
   fullName:                   String
@@ -102,6 +105,7 @@ type UpdateUserPhotoResponse {
 # ---------------------------------------------------------
 # *_: Queries
 # ---------------------------------------------------------
+
 type Query {
   # DONE: Get the currently logged in user
   getAuthUser:                                              UserPayload
@@ -125,6 +129,7 @@ type Query {
 # ---------------------------------------------------------
 # *_: Mutations
 # ---------------------------------------------------------
+
 type Mutation {
   # DONE: Sign in user
   signin(input: SignInInput!):                              Token
@@ -148,6 +153,7 @@ type Mutation {
 # ---------------------------------------------------------
 # *_: Subscriptions
 # ---------------------------------------------------------
+
 type Subscription {
   # DONE: Subscribe to is user online event
   isUserOnline(userId: ID!):                                IsUserOnlinePayload

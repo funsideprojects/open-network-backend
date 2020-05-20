@@ -7,7 +7,7 @@ export interface IPostImage {
 }
 
 export interface IPost extends Document {
-  title: string
+  title?: string
   images: Array<IPostImage>
   authorId: ObjectId
   isPrivate: boolean
@@ -19,6 +19,7 @@ const postSchema = new Schema(
     images: [{ type: Object }],
     authorId: {
       type: Schema.Types.ObjectId,
+      required: true,
       ref: 'User',
     },
     isPrivate: {

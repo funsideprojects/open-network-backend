@@ -1,6 +1,7 @@
 # ---------------------------------------------------------
 # *_: Model Objects
 # ---------------------------------------------------------
+
 type Follow {
   _id:            FollowID!
 
@@ -16,6 +17,7 @@ type FollowID {
 # ---------------------------------------------------------
 # *_: Input Objects
 # ---------------------------------------------------------
+
 input CreateOrDeleteFollowInput {
   userId:         ID!
 }
@@ -23,6 +25,7 @@ input CreateOrDeleteFollowInput {
 # ---------------------------------------------------------
 # *_: Return Payloads
 # ---------------------------------------------------------
+
 type FollowerOrFollowingPayload {
   count:          Int
   users:         [UserPayload]
@@ -31,6 +34,7 @@ type FollowerOrFollowingPayload {
 # ---------------------------------------------------------
 # *_: Queries
 # ---------------------------------------------------------
+
 type Query {
   # DONE: Get follows made by user
   getFollowedUsers(username: String, skip: Int, limit: Int):          FollowerOrFollowingPayload

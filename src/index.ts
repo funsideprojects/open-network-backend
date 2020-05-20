@@ -11,6 +11,7 @@ import { connectMongoDB } from './utils/mongoose'
 
 import models from './models'
 import resolvers from './resolvers'
+import { schemaDirectives } from './directives'
 
 // *_: Process events
 process.on('exit', (code) => {
@@ -33,7 +34,7 @@ async function main() {
     app.use(
       cors({
         origin: process.env.FRONTEND_URL,
-        credentials: true
+        credentials: true,
       })
     )
   }
@@ -41,7 +42,7 @@ async function main() {
   // *_: Create a Apollo Server
   const typeDefs = mergeTypes(fileLoader(join(__dirname, `/schema/**/*.gql`)), { all: true })
 
-  const server = createApolloServer(typeDefs, resolvers, models)
+  const server = createApolloServer(typeDefs, resolvers, schemaDirectives, models)
   server.applyMiddleware({ app, path: '/graphql' })
 
   // *__: Create http server and add subscriptions to it

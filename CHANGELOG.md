@@ -1,3 +1,9 @@
+# Wed-May-20-20 18:00
+
+- Add GraphQL schema-directive setup.
+- Format models + schema.
+- Add warning on deprecated field.
+
 # Wed-May-20-20 12:00
 
 - Update .env.example file.

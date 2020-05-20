@@ -12,24 +12,24 @@ const stickerSchema = new Schema(
   {
     image: {
       type: String,
-      required: true
+      required: true,
     },
     imagePublicId: {
       type: String,
-      required: true
+      required: true,
     },
     name: {
       type: String,
-      required: true
+      required: true,
     },
     collectionId: {
       type: Schema.Types.ObjectId,
       required: true,
-      ref: 'StickerCollection'
-    }
+      ref: 'StickerCollection',
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 )
 

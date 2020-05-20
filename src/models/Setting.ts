@@ -12,11 +12,11 @@ const settingSchema = new Schema(
     userId: {
       type: Schema.Types.ObjectId,
       required: true,
-      ref: 'User'
-    }
+      ref: 'User',
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 )
 

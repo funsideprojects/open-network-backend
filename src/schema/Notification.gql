@@ -1,6 +1,7 @@
 # ---------------------------------------------------------
 # *_: Model Objects
 # ---------------------------------------------------------
+
 type Notification {
   id:                 ID!
   type:               NotificationType!
@@ -35,6 +36,7 @@ input DeleteNotificationInput {
 # ---------------------------------------------------------
 # *_: Return Payloads
 # ---------------------------------------------------------
+
 type NotificationPayload {
   id:                 ID
   type:               String
@@ -61,6 +63,7 @@ type NotificationCreatedOrDeletedPayload {
 # ---------------------------------------------------------
 # *_: Queries
 # ---------------------------------------------------------
+
 type Query {
   # DONE: Gets notifications for authUser
   getMyNotifications(skip: Int, limit: Int):              NotificationsPayload
@@ -69,6 +72,7 @@ type Query {
 # ---------------------------------------------------------
 # *_: Mutations
 # ---------------------------------------------------------
+
 type Mutation {
   # DONE: Updates notification seen values for user
   updateNotificationSeen:                                 Boolean
@@ -80,6 +84,7 @@ type Mutation {
 # ---------------------------------------------------------
 # *_: Subscriptions
 # ---------------------------------------------------------
+
 type Subscription {
   # DONE: Subscribes to notification created or deleted event
   notificationCreatedOrDeleted:                           NotificationCreatedOrDeletedPayload

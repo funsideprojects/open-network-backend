@@ -2,20 +2,17 @@ import { Document, Schema, model } from 'mongoose'
 import { ObjectId } from 'mongodb'
 
 export interface IComment extends Document {
-  comment: string
-  image: string
-  imagePublicId: string
-  stickerId: ObjectId
+  comment?: string
+  image?: string
+  imagePublicId?: string
+  stickerId?: ObjectId
   postId: ObjectId
   authorId: ObjectId
 }
 
 const commentSchema = new Schema(
   {
-    comment: {
-      type: String,
-      required: true,
-    },
+    comment: String,
     image: String,
     imagePublicId: String,
     stickerId: {

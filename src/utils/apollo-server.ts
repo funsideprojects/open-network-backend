@@ -25,7 +25,7 @@ export const pubSub = new PubSub()
  * @param {array} resolvers GraphQL Resolvers
  * @param {obj} models Mongoose Models
  */
-export function createApolloServer(typeDefs, resolvers, models: IModels) {
+export function createApolloServer(typeDefs, resolvers, schemaDirectives, models: IModels) {
   return new ApolloServer({
     uploads: {
       maxFileSize: 10000000, // 10 MB
@@ -33,6 +33,7 @@ export function createApolloServer(typeDefs, resolvers, models: IModels) {
     },
     typeDefs,
     resolvers,
+    schemaDirectives,
     context: async ({ req, connection }) => {
       if (connection) return connection.context
 

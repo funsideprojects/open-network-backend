@@ -3,11 +3,11 @@ import { ObjectId } from 'mongodb'
 
 export interface IMessage extends Document {
   senderId: ObjectId
-  receiverId: ObjectId
-  message: string
-  image: string
-  imagePublicId: string
-  stickerId: ObjectId
+  recipientId: ObjectId
+  message?: string
+  image?: string
+  imagePublicId?: string
+  stickerId?: ObjectId
   seen: Array<ObjectId>
 }
 
@@ -15,10 +15,12 @@ const messageSchema = new Schema(
   {
     senderId: {
       type: Schema.Types.ObjectId,
+      required: true,
       ref: 'User',
     },
     recipientId: {
       type: Schema.Types.ObjectId,
+      required: true,
       ref: 'User',
     },
     message: String,

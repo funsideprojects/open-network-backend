@@ -1,6 +1,7 @@
 # ---------------------------------------------------------
 # *_: Model Objects
 # ---------------------------------------------------------
+
 type StickerCollection {
   id:                       ID!
   thumbnailImage:           String!
@@ -27,6 +28,7 @@ type Sticker {
 # ---------------------------------------------------------
 # *_: Input Objects
 # ---------------------------------------------------------
+
 input CreateStickerCollectionInput {
   thumbnailImage:           Upload!
   name:                     String!
@@ -58,6 +60,7 @@ input DeleteStickerCollectionInput {
 # ---------------------------------------------------------
 # *_: Return Payloads
 # ---------------------------------------------------------
+
 type StickerCollectionPayload {
   id:                       ID
   thumbnailImage:           String
@@ -92,26 +95,28 @@ type StickerPayload {
 # ---------------------------------------------------------
 # *_: Queries
 # ---------------------------------------------------------
+
 type Query {
   # TODO:
-  getStickerCollections(skip: Int, limit: Int):                         StickerCollectionsPayload
+  getStickerCollections(skip: Int, limit: Int):                         StickerCollectionsPayload   @deprecated(reason: "This's a upcoming api, not available at the moment.")
 
   # TODO:
-  getInstalledStickerCollections(skip: Int, limit: Int):                StickerCollectionsPayload
+  getInstalledStickerCollections(skip: Int, limit: Int):                StickerCollectionsPayload   @deprecated(reason: "This's a upcoming api, not available at the moment.")
 }
 
 # ---------------------------------------------------------
 # *_: Mutations
 # ---------------------------------------------------------
+
 type Mutation {
   # TODO:
-  createStickerCollection(input: CreateStickerCollectionInput!):          Boolean
+  createStickerCollection(input: CreateStickerCollectionInput!):          Boolean   @deprecated(reason: "This's a upcoming api, not available at the moment.")
 
   # TODO:
-  updateStickerCollection(input: UpdateStickerCollectionInput!):          Boolean
+  updateStickerCollection(input: UpdateStickerCollectionInput!):          Boolean   @deprecated(reason: "This's a upcoming api, not available at the moment.")
 
   # TODO:
-  deleteStickerCollection(input: DeleteStickerCollectionInput!):          Boolean
+  deleteStickerCollection(input: DeleteStickerCollectionInput!):          Boolean   @deprecated(reason: "This's a upcoming api, not available at the moment.")
 }
 
 # ---------------------------------------------------------

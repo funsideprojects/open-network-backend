@@ -1,6 +1,7 @@
 # ---------------------------------------------------------
 # *_: Model Objects
 # ---------------------------------------------------------
+
 type Like {
   _id:          LikeId!
 
@@ -16,6 +17,7 @@ type LikeId {
 # ---------------------------------------------------------
 # *_: Input Objects
 # ---------------------------------------------------------
+
 input CreateOrDeleteLikeInput {
   postId:       ID!
 }
@@ -23,6 +25,7 @@ input CreateOrDeleteLikeInput {
 # ---------------------------------------------------------
 # *_: Return Payloads
 # ---------------------------------------------------------
+
 type LikePayload {
   post:         PostPayload
   user:         UserPayload
@@ -39,9 +42,10 @@ type LikesPayload {
 # ---------------------------------------------------------
 # *_: Queries
 # ---------------------------------------------------------
+
 type Query {
   # TODO: Get likes made by authUser
-  getMyLikes(skip: Int, limit: Int):          LikesPayload
+  getMyLikes(skip: Int, limit: Int):          LikesPayload      @deprecated(reason: "This's a upcoming api, not available at the moment.")
 
   # DONE: Get post's likes
   getLikes(postId: ID!):                      LikesPayload
@@ -50,6 +54,7 @@ type Query {
 # ---------------------------------------------------------
 # *_: Mutations
 # ---------------------------------------------------------
+
 type Mutation {
   # DONE: Create a like for post
   createLike(input: CreateOrDeleteLikeInput!):        Boolean

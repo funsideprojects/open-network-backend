@@ -1,6 +1,7 @@
 # ---------------------------------------------------------
 # Model Objects
 # ---------------------------------------------------------
+
 type Message {
   id:               ID!
   senderId:         ID!
@@ -15,6 +16,7 @@ type Message {
 # ---------------------------------------------------------
 # Input Objects
 # ---------------------------------------------------------
+
 input CreateMessageInput {
   receiverId:       ID!
   message:          String!
@@ -27,6 +29,7 @@ input UpdateMessageSeenInput {
 # ---------------------------------------------------------
 # Return Payloads
 # ---------------------------------------------------------
+
 type MessagePayload {
   id:               ID
   receiverId:       ID
@@ -54,6 +57,7 @@ type ConversationsPayload {
 # ---------------------------------------------------------
 # Queries
 # ---------------------------------------------------------
+
 type Query {
   # Gets authUser's messages
   getMessages(withUserId: ID!):                [MessagePayload]
@@ -65,6 +69,7 @@ type Query {
 # ---------------------------------------------------------
 # Mutations
 # ---------------------------------------------------------
+
 type Mutation {
   # Creates a message
   createMessage(input: CreateMessageInput!):            MessagePayload
@@ -76,6 +81,7 @@ type Mutation {
 # ---------------------------------------------------------
 # Subscriptions
 # ---------------------------------------------------------
+
 type Subscription {
   # Subscribes to message created event
   messageCreated(withUserId: ID!):              MessagePayload

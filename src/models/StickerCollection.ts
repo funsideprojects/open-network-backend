@@ -5,6 +5,7 @@ export interface IStickerCollection extends Document {
   thumbnailImage: string
   thumbnailImagePublicId: string
   name: string
+  description?: string
   authorId: ObjectId
   isPrivate: boolean
 }
@@ -13,29 +14,29 @@ const stickerCollectionSchema = new Schema(
   {
     thumbnailImage: {
       type: String,
-      required: true
+      required: true,
     },
     thumbnailImagePublicId: {
       type: String,
-      required: true
+      required: true,
     },
     name: {
       type: String,
-      required: true
+      required: true,
     },
     description: String,
     authorId: {
       type: Schema.Types.ObjectId,
-      ref: 'User'
+      ref: 'User',
     },
     isPrivate: {
       type: Boolean,
       required: true,
-      default: false
-    }
+      default: false,
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 )
 

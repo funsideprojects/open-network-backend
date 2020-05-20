@@ -1,6 +1,7 @@
 # ---------------------------------------------------------
 # *_: Model Objects
 # ---------------------------------------------------------
+
 type Post {
   id:                 ID!
   title:              String
@@ -20,6 +21,7 @@ type PostImage {
 # ---------------------------------------------------------
 # *_: Input Objects
 # ---------------------------------------------------------
+
 input CreatePostInput {
   title:              String
   images:            [Upload]
@@ -56,6 +58,7 @@ enum UpdatePostImageType {
 # ---------------------------------------------------------
 # *_: Return Payloads
 # ---------------------------------------------------------
+
 type PostPayload {
   id:                 ID
   title:              String
@@ -86,18 +89,19 @@ type PostsPayload {
 # ---------------------------------------------------------
 # *_: Queries
 # ---------------------------------------------------------
+
 type Query {
   # DONE: Get posts by input operation
   getPosts(type: GetPostsType!, username: String, skip: Int, limit: Int):       PostsPayload
 
   # DONE: Get post by id
   getPost(postId: ID!):                                                         PostPayload
-
 }
 
 # ---------------------------------------------------------
 # *_: Mutations
 # ---------------------------------------------------------
+
 type Mutation {
   # DONE: Create a new post
   createPost(input: CreatePostInput!):                          PostPayload
@@ -106,7 +110,7 @@ type Mutation {
   updatePost(input: UpdatePostInput!):                          Boolean
 
   # TODO: Update post's images
-  updatePostImages(input: UpdatePostImagesInput!):              Boolean
+  updatePostImages(input: UpdatePostImagesInput!):              Boolean       @deprecated(reason: "This's a upcoming api, not available at the moment.")
 
   # FIXME: Delete a user post
   deletePost(input: DeletePostInput!):                          Boolean
