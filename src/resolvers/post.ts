@@ -367,7 +367,7 @@ const Mutation = {
 
       let uploadedImages
 
-      if (images.length) {
+      if (images?.length) {
         const uploadedFiles = await uploadFiles(username, images, ['image', 'video'])
         if (!uploadedFiles.length) throw new Error('')
 
