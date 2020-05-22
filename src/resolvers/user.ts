@@ -3,7 +3,9 @@ import { withFilter } from 'apollo-server'
 import { combineResolvers } from 'graphql-resolvers'
 
 import { IS_USER_ONLINE } from 'constants/Subscriptions'
-import { generateToken, sendEmail, pubSub, IContext } from 'utils'
+import { pubSub, IContext } from 'utils/apollo-server'
+import { sendEmail } from 'utils/email'
+import { generateToken } from 'utils/jwt'
 
 import { uploadFile, removeUploadedFile } from './functions'
 import { isAuthenticated } from './high-order-resolvers'

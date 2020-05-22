@@ -27,6 +27,7 @@ const stickerCollectionSchema = new Schema(
     description: String,
     authorId: {
       type: Schema.Types.ObjectId,
+      required: true,
       ref: 'User',
     },
     isPrivate: {

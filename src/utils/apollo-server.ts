@@ -1,34 +1,37 @@
-import { ApolloServer } from 'apollo-server-express'
+import { join } from 'path'
 import { PubSub } from 'apollo-server'
+import { ApolloServer } from 'apollo-server-express'
+import { fileLoader, mergeTypes } from 'merge-graphql-schemas'
 
+import { ERROR_TYPES } from 'constants/Errors'
 import { IS_USER_ONLINE } from 'constants/Subscriptions'
-import { IModels } from 'models'
+import { schemaDirectives } from 'directives'
+import models, { IModels } from 'models'
+import resolvers from 'resolvers'
+import * as hl from 'utils/chalk'
 import { checkAuthorization, IDecodedToken } from 'utils/jwt'
-import { highlight } from 'utils/chalk'
+import Logger from 'utils/logger'
 
 // *_: Interface
 export interface IContext extends IModels {
   authUser: IDecodedToken
+  ERROR_TYPES: typeof ERROR_TYPES
 }
 
 export interface ISubscriptionContext {
   authUser: IDecodedToken
+  ERROR_TYPES: typeof ERROR_TYPES
 }
 
 // *_: Export pubSub instance for publishing events
 export const pubSub = new PubSub()
 
-/**
- * *: Creates an Apollo server and identifies if user is authenticated or not
- *
- * @param {obj} schema GraphQL Schema
- * @param {array} resolvers GraphQL Resolvers
- * @param {obj} models Mongoose Models
- */
-export function createApolloServer(typeDefs, resolvers, schemaDirectives, models: IModels) {
+const typeDefs = mergeTypes(fileLoader(join(__dirname, `/../schema/**/*.gql`)), { all: true })
+
+export function createApolloServer() {
   return new ApolloServer({
     uploads: {
-      maxFileSize: 10000000, // 10 MB
+      maxFileSize: 10 * 1000 * 1000, // 10 MB
       maxFiles: 20,
     },
     typeDefs,
@@ -43,7 +46,7 @@ export function createApolloServer(typeDefs, resolvers, schemaDirectives, models
         if (user) authUser = user
       }
 
-      return Object.assign({ authUser }, models)
+      return Object.assign({ authUser }, models, { ERROR_TYPES })
     },
     subscriptions: {
       onConnect: async (connectionParams: any, _webSocket) => {
@@ -51,7 +54,7 @@ export function createApolloServer(typeDefs, resolvers, schemaDirectives, models
         if (connectionParams.authorization) {
           const authUser = await checkAuthorization(connectionParams.authorization)
 
-          console.log(highlight(0, '[Connected User]:'), authUser!.fullName, +new Date())
+          Logger.debug(hl.success('[Connected User]:'), authUser!.fullName, +new Date())
 
           // *: Publish user isOnline true
           pubSub.publish(IS_USER_ONLINE, {
@@ -70,8 +73,8 @@ export function createApolloServer(typeDefs, resolvers, schemaDirectives, models
         // *: Get socket's context
         const subscriptionContext: ISubscriptionContext = await context.initPromise
         if (subscriptionContext && subscriptionContext.authUser) {
-          console.log(
-            highlight(3, '[Disconnected User]:'),
+          Logger.debug(
+            hl.error('[Disconnected User]:'),
             subscriptionContext.authUser!.fullName,
             +new Date()
           )

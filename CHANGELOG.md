@@ -1,7 +1,12 @@
+# Wed-May-22-20 12:00
+
+- Update `Comment` resolvers.
+- Add Error codes.
+
 # Wed-May-20-20 18:00
 
-- Add GraphQL schema-directive setup.
 - Format models + schema.
+- Add GraphQL schema-directive setup.
 - Add warning on deprecated field.
 
 # Wed-May-20-20 12:00

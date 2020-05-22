@@ -1,12 +1,15 @@
 # ---------------------------------------------------------
-# Model Objects
+# *_: Model Objects
 # ---------------------------------------------------------
 
 type Message {
   id:               ID!
   senderId:         ID!
-  receiverId:       ID!
-  message:          String!
+  recipientId:      ID!
+  message:          String
+  image:            String
+  imagePublicId:    String
+  stickerId:        String
   seen:            [String]
 
   createdAt:        String
@@ -14,12 +17,14 @@ type Message {
 }
 
 # ---------------------------------------------------------
-# Input Objects
+# *_: Input Objects
 # ---------------------------------------------------------
 
 input CreateMessageInput {
-  receiverId:       ID!
-  message:          String!
+  recipientId:      ID!
+  message:          String
+  image:            Upload
+  stickerId:        ID
 }
 
 input UpdateMessageSeenInput {
@@ -27,21 +32,24 @@ input UpdateMessageSeenInput {
 }
 
 # ---------------------------------------------------------
-# Return Payloads
+# *_: Return Payloads
 # ---------------------------------------------------------
 
 type MessagePayload {
   id:               ID
-  receiverId:       ID
-  receiver:         UserPayload
   senderId:         ID
   sender:           UserPayload
+  recipientId:      ID
+  recipient:        UserPayload
   message:          String
+  image:            String
+  imagePublicId:    String
+  stickerId:        String
+  sticker:          StickerPayload
   seen:            [UserPayload]
 
   createdAt:        String
   updatedAt:        String
-  isFirstMessage:   Boolean
 }
 
 type ConversationsPayload {
@@ -52,10 +60,11 @@ type ConversationsPayload {
   isOnline:         Boolean
 
   lastMessage:      MessagePayload
+  unseenCount:      Int
 }
 
 # ---------------------------------------------------------
-# Queries
+# *_: Queries
 # ---------------------------------------------------------
 
 type Query {
@@ -67,7 +76,7 @@ type Query {
 }
 
 # ---------------------------------------------------------
-# Mutations
+# *_: Mutations
 # ---------------------------------------------------------
 
 type Mutation {
@@ -79,7 +88,7 @@ type Mutation {
 }
 
 # ---------------------------------------------------------
-# Subscriptions
+# *_: Subscriptions
 # ---------------------------------------------------------
 
 type Subscription {

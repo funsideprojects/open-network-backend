@@ -365,7 +365,7 @@ const Mutation = {
       if (typeof isPrivate !== 'boolean') throw new Error('Post privacy is required.')
       if (!title && !images.length) throw new Error('Post title or image is required.')
 
-      let uploadedImages
+      let uploadedImages: Array<any> = []
 
       if (images?.length) {
         const uploadedFiles = await uploadFiles(username, images, ['image', 'video'])

@@ -35,5 +35,5 @@ export default {
   Setting,
   Sticker,
   StickerCollection,
-  User
+  User,
 }

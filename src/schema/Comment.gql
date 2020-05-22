@@ -29,7 +29,10 @@ input CreateCommentInput {
 input UpdateCommentInput {
   id:               ID!
   comment:          String
-
+  image:            Upload
+  stickerId:        ID
+  deleteImage:      Boolean
+  deleteSticker:    Boolean
 }
 
 input DeleteCommentInput {

@@ -2,9 +2,10 @@ import { createTransport } from 'nodemailer'
 
 const { MAIL_SERVICE, MAIL_USER, MAIL_PASS } = process.env
 
-/**
- * Creates transporter object that will help us to send emails
- */
+if (!MAIL_SERVICE || !MAIL_USER || !MAIL_PASS) {
+  throw new Error(`Missing evironment variables for mail service.`)
+}
+
 const transporter = createTransport({
   service: MAIL_SERVICE,
   auth: {
