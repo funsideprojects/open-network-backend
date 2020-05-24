@@ -12,22 +12,22 @@ const Query = {
   getFollowedUsers: async (
     root,
     { username, skip, limit },
-    { authUser, User, Follow }: IContext,
+    { authUser, User, Follow, ERROR_TYPES }: IContext,
     info: GraphQLResolveInfo
   ) => {
     let userFound
     // if there's username then find base on it
     if (username) {
       userFound = await User.findOne({ username })
-      if (!userFound) throw new Error('User not found')
+      if (!userFound) throw new Error(`user_${ERROR_TYPES.NOT_FOUND}`)
     } else {
       // There's no username, then find followed users of authUser
       if (authUser) {
         userFound = await User.findOne({ username: authUser.username })
-        if (!userFound) throw new Error('User not found')
-        // There's no username and no authUser, invalid action
+        if (!userFound) throw new Error(`user_${ERROR_TYPES.NOT_FOUND}`)
       } else {
-        throw new Error(`Field 'username' is required`)
+        // There's no username and no authUser, invalid input
+        throw new Error(ERROR_TYPES.INVALID_INPUT)
       }
     }
 
@@ -55,13 +55,13 @@ const Query = {
             let: { userId: '$_id.userId' },
             pipeline: [
               { $match: { $expr: { $eq: ['$_id', '$$userId'] } } },
-              { $set: { id: '$_id' } }
+              { $set: { id: '$_id' } },
             ],
-            as: 'users'
-          }
+            as: 'users',
+          },
         },
         { $unwind: { path: '$users', preserveNullAndEmptyArrays: true } },
-        { $replaceRoot: { newRoot: { $mergeObjects: ['$users'] } } }
+        { $replaceRoot: { newRoot: { $mergeObjects: ['$users'] } } },
       ])
 
       result['users'] = users
@@ -74,11 +74,11 @@ const Query = {
   getUserFollowers: async (
     root,
     { username, skip, limit },
-    { User, Follow }: IContext,
+    { User, Follow, ERROR_TYPES }: IContext,
     info: GraphQLResolveInfo
   ) => {
     const userFound = await User.findOne({ username })
-    if (!userFound) throw new Error('User not found')
+    if (!userFound) throw new Error(`user_${ERROR_TYPES.NOT_FOUND}`)
 
     const requestedFields = getRequestedFieldsFromInfo(info)
     const query = { '_id.userId': userFound._id }
@@ -104,20 +104,20 @@ const Query = {
             let: { userId: '$_id.followerId' },
             pipeline: [
               { $match: { $expr: { $eq: ['$_id', '$$userId'] } } },
-              { $set: { id: '$_id' } }
+              { $set: { id: '$_id' } },
             ],
-            as: 'users'
-          }
+            as: 'users',
+          },
         },
         { $unwind: { path: '$users', preserveNullAndEmptyArrays: true } },
-        { $replaceRoot: { newRoot: { $mergeObjects: ['$users'] } } }
+        { $replaceRoot: { newRoot: { $mergeObjects: ['$users'] } } },
       ])
 
       result['users'] = users
     }
 
     return result
-  }
+  },
 }
 
 // *_:
@@ -125,32 +125,42 @@ const Mutation = {
   // DONE:
   createFollow: combineResolvers(
     isAuthenticated,
-    async (root, { input: { userId } }, { authUser: { id }, User, Follow }: IContext) => {
-      if (userId === id) throw new Error(`You can't follow yourself!`)
-      if (!(await User.findById(userId))) throw new Error('User not found')
-      if (!(await Follow.findOne({ $and: [{ '_id.userId': userId }, { '_id.followerId': id }] }))) {
-        await new Follow({ _id: { userId, followerId: id } }).save()
-
-        return true
+    async (
+      root,
+      { input: { userId } },
+      { authUser: { id }, User, Follow, ERROR_TYPES }: IContext
+    ) => {
+      if (userId === id) throw new Error(ERROR_TYPES.INVALID_OPERATION)
+      if (!(await User.findById(userId))) throw new Error(`user_${ERROR_TYPES.NOT_FOUND}`)
+      if (
+        !!(await Follow.findOne({ $and: [{ '_id.userId': userId }, { '_id.followerId': id }] }))
+      ) {
+        throw new Error(ERROR_TYPES.INVALID_OPERATION)
       }
 
-      throw new Error(`You've already followed this user`)
+      await new Follow({ _id: { userId, followerId: id } }).save()
+
+      return true
     }
   ),
 
   // DONE:
   deleteFollow: combineResolvers(
     isAuthenticated,
-    async (root, { input: { userId } }, { authUser: { id }, User, Follow }: IContext) => {
-      if (!(await User.findById(userId))) throw new Error('User not found')
+    async (
+      root,
+      { input: { userId } },
+      { authUser: { id }, User, Follow, ERROR_TYPES }: IContext
+    ) => {
+      if (!(await User.findById(userId))) throw new Error(`user_${ERROR_TYPES.NOT_FOUND}`)
 
       await Follow.deleteOne({
-        $and: [{ '_id.userId': userId }, { '_id.followerId': id }]
+        $and: [{ '_id.userId': userId }, { '_id.followerId': id }],
       })
 
       return true
     }
-  )
+  ),
 }
 
 export default { Query, Mutation }

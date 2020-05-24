@@ -14,7 +14,7 @@ const Query = {
       const postsFound = await Like.aggregate([
         { $match: { '_id.userId': id } },
         ...(skip ? [{ $skip: skip }] : []),
-        ...(limit ? [{ $limit: limit }] : [])
+        ...(limit ? [{ $limit: limit }] : []),
       ])
 
       return postsFound
@@ -22,8 +22,14 @@ const Query = {
   ),
 
   // DONE:
-  getLikes: async (root, { postId }, { Post, Like }: IContext, info) => {
-    if (!(await Post.findById(postId))) throw new Error('Post not found!')
+  getLikes: async (root, { postId }, { authUser, Post, Like, ERROR_TYPES }: IContext, info) => {
+    const postFound = await Post.findById(postId)
+    if (!postFound) throw new Error(`post_${ERROR_TYPES.NOT_FOUND}`)
+    if (postFound.isPrivate) {
+      if (!authUser || authUser.id !== postFound.authorId.toHexString()) {
+        throw new Error(`post_${ERROR_TYPES.NOT_FOUND}`)
+      }
+    }
 
     const requestedFields = getRequestedFieldsFromInfo(info)
     const query = { '_id.postId': Types.ObjectId(postId) }
@@ -50,12 +56,12 @@ const Query = {
                   let: { postId: '$_id.postId' },
                   pipeline: [
                     { $match: { $expr: { $eq: ['$_id', '$$postId'] } } },
-                    { $set: { id: '$_id' } }
+                    { $set: { id: '$_id' } },
                   ],
-                  as: 'post'
-                }
+                  as: 'post',
+                },
               },
-              { $unwind: { path: '$post', preserveNullAndEmptyArrays: true } }
+              { $unwind: { path: '$post', preserveNullAndEmptyArrays: true } },
             ]
           : []),
         ...(shouldAggregateLikesUser
@@ -66,21 +72,21 @@ const Query = {
                   let: { userId: '$_id.userId' },
                   pipeline: [
                     { $match: { $expr: { $eq: ['$_id', '$$userId'] } } },
-                    { $set: { id: '$_id' } }
+                    { $set: { id: '$_id' } },
                   ],
-                  as: 'user'
-                }
+                  as: 'user',
+                },
               },
-              { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } }
+              { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
             ]
-          : [])
+          : []),
       ])
 
       result['likes'] = likes
     }
 
     return result
-  }
+  },
 }
 
 // *_:
@@ -88,16 +94,14 @@ const Mutation = {
   // DONE:
   createLike: combineResolvers(
     isAuthenticated,
-    async (root, { input: { postId } }, { authUser: { id }, Like }: IContext) => {
-      try {
-        if (!(await Like.findOne({ $and: [{ '_id.postId': postId }, { '_id.userId': id }] }))) {
-          await new Like({ _id: { postId, userId: id } }).save()
-        }
-
-        return true
-      } catch {
-        return false
+    async (root, { input: { postId } }, { authUser: { id }, Like, ERROR_TYPES }: IContext) => {
+      if (!!(await Like.findOne({ $and: [{ '_id.postId': postId }, { '_id.userId': id }] }))) {
+        throw new Error(ERROR_TYPES.INVALID_OPERATION)
       }
+
+      await new Like({ _id: { postId, userId: id } }).save()
+
+      return true
     }
   ),
 
@@ -105,15 +109,11 @@ const Mutation = {
   deleteLike: combineResolvers(
     isAuthenticated,
     async (root, { input: { postId } }, { authUser: { id }, Like }: IContext) => {
-      try {
-        await Like.findOneAndRemove({ $and: [{ '_id.postId': postId }, { '_id.userId': id }] })
+      await Like.findOneAndRemove({ $and: [{ '_id.postId': postId }, { '_id.userId': id }] })
 
-        return true
-      } catch {
-        return false
-      }
+      return true
     }
-  )
+  ),
 }
 
 export default { Query, Mutation }

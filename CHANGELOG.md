@@ -1,6 +1,8 @@
 # Wed-May-22-20 12:00
 
 - Update `Comment` resolvers.
+- Update `Follow` resolvers.
+- Update `Like` resolvers.
 - Add Error codes.
 
 # Wed-May-20-20 18:00
