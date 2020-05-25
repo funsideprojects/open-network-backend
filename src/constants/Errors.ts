@@ -4,4 +4,5 @@ export const ERROR_TYPES = {
   INVALID_OPERATION: 'invalid_operation',
   UNKNOWN: 'unknown',
   PERMISSION_DENIED: 'permission_denied',
+  UNAUTHENTICATED: 'unauthenticated',
 }

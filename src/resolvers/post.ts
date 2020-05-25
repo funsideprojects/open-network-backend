@@ -13,14 +13,14 @@ const Query = {
   getPosts: async (
     root,
     { type, username, skip, limit },
-    { authUser, User, Post, Follow }: IContext,
+    { authUser, User, Post, Follow, ERROR_TYPES }: IContext,
     info: GraphQLResolveInfo
   ) => {
     let query
     switch (type) {
       case 'USER': {
         const userFound = await User.findOne({ username }).select('_id')
-        if (!userFound) throw new Error('User not found')
+        if (!userFound) throw new Error(`user_${ERROR_TYPES.NOT_FOUND}`)
 
         query = {
           $and: [
@@ -33,7 +33,7 @@ const Query = {
       }
 
       case 'FOLLOWED': {
-        if (!authUser) throw new Error('Not signed in')
+        if (!authUser) throw new Error(ERROR_TYPES.UNAUTHENTICATED)
         const currentFollowing = await Follow.find({ '_id.followerId': authUser.id })
 
         query = {
@@ -54,34 +54,34 @@ const Query = {
       }
 
       case 'EXPLORE': {
-        if (authUser) {
-          const currentFollowing = await Follow.find({ '_id.followerId': authUser.id })
+        let currentFollowing
 
-          query = {
-            $and: [
-              { image: { $ne: null } },
-              {
-                authorId: {
-                  $nin: [
-                    ...currentFollowing.map(({ _id }) => _id.userId),
-                    Types.ObjectId(authUser.id),
-                  ],
-                },
-              },
-              { isPrivate: false },
-            ],
-          }
+        if (authUser) {
+          currentFollowing = await Follow.find({ '_id.followerId': authUser.id })
         } else {
-          query = {
-            $and: [{ image: { $ne: null } }, { isPrivate: false }],
-          }
+          currentFollowing = []
+        }
+
+        query = {
+          $and: [
+            { image: { $ne: [] } },
+            {
+              authorId: {
+                $nin: [
+                  ...currentFollowing.map(({ _id }) => _id.userId),
+                  Types.ObjectId(authUser.id),
+                ],
+              },
+            },
+            { isPrivate: false },
+          ],
         }
 
         break
       }
 
       default: {
-        throw new Error('Invalid operation')
+        throw new Error(ERROR_TYPES.INVALID_OPERATION)
       }
     }
 
@@ -222,13 +222,18 @@ const Query = {
 
   // DONE:
   getPost: combineResolvers(
-    async (root, { postId }, { authUser, Post }: IContext, info: GraphQLResolveInfo) => {
+    async (
+      root,
+      { postId },
+      { authUser, Post, ERROR_TYPES }: IContext,
+      info: GraphQLResolveInfo
+    ) => {
       const postFound = await Post.findById(postId).select({ _id: 1, isPrivate: 1, authorId: 1 })
-      if (!postFound) throw new Error('Post not found!')
+      if (!postFound) throw new Error(`post_${ERROR_TYPES.NOT_FOUND}`)
 
       if (postFound.isPrivate) {
         if (!authUser || authUser.id !== postFound.authorId.toHexString()) {
-          throw new Error('Post not found')
+          throw new Error(`post_${ERROR_TYPES.NOT_FOUND}`)
         }
       }
 
@@ -360,16 +365,19 @@ const Mutation = {
     async (
       root,
       { input: { title, images, isPrivate } },
-      { authUser: { id, username }, Post, File }: IContext
+      { authUser: { id, username }, Post, File, ERROR_TYPES }: IContext
     ) => {
-      if (typeof isPrivate !== 'boolean') throw new Error('Post privacy is required.')
-      if (!title && !images.length) throw new Error('Post title or image is required.')
+      // Check input
+      if (typeof isPrivate !== 'boolean' || (!title && !images.length)) {
+        throw new Error(ERROR_TYPES.INVALID_INPUT)
+      }
 
+      // Upload
       let uploadedImages: Array<any> = []
 
       if (images?.length) {
-        const uploadedFiles = await uploadFiles(username, images, ['image', 'video'])
-        if (!uploadedFiles.length) throw new Error('')
+        const uploadedFiles = await uploadFiles(username, images, ['image'])
+        if (!uploadedFiles.length) throw new Error(ERROR_TYPES.UNKNOWN)
 
         uploadedImages = uploadedFiles.map(({ fileAddress, filePublicId }) => ({
           image: fileAddress,
@@ -392,6 +400,7 @@ const Mutation = {
         )
       }
 
+      // Insert
       const newPost = await new Post({
         title,
         images: uploadedImages,
@@ -406,60 +415,120 @@ const Mutation = {
   // DONE:
   updatePost: combineResolvers(
     isAuthenticated,
-    async (root, { input: { id, title, isPrivate } }, { authUser, Post }: IContext) => {
-      if (typeof title !== 'string' && typeof isPrivate !== 'boolean') {
-        throw new Error('Nothing to update')
+    async (
+      root,
+      { input: { id, title, isPrivate, addImages, deleteImages } },
+      { authUser, Post, File, ERROR_TYPES }: IContext
+    ) => {
+      // Check input
+      if (
+        typeof title !== 'string' &&
+        typeof isPrivate !== 'boolean' &&
+        !addImages.length &&
+        !deleteImages.length
+      ) {
+        throw new Error(ERROR_TYPES.INVALID_OPERATION)
       }
-      const postFound = await Post.findById(id).select({ authorId: 1 })
-      if (!postFound) throw new Error('Post not found!')
-      if (postFound.authorId.toHexString() !== authUser.id) throw new Error('Perrmission denied!')
 
-      try {
-        await Post.findByIdAndUpdate(id, {
-          $set: {
-            ...(typeof title === 'string' ? { title } : {}),
-            ...(typeof isPrivate === 'boolean' ? { isPrivate } : {}),
-          },
-        })
-
-        return true
-      } catch {
-        return false
+      // Ensure post existence
+      const postFound = await Post.findById(id).select({ authorId: 1, images: 1 })
+      if (!postFound) throw new Error(`post_${ERROR_TYPES.NOT_FOUND}`)
+      if (postFound.authorId.toHexString() !== authUser.id) {
+        throw new Error(ERROR_TYPES.PERMISSION_DENIED)
       }
+
+      // Upload
+      let uploadedImages: Array<any> = []
+
+      if (addImages?.length) {
+        const uploadedFiles = await uploadFiles(authUser.username, addImages, ['image'])
+        if (!uploadedFiles.length) throw new Error(ERROR_TYPES.UNKNOWN)
+
+        uploadedImages = uploadedFiles.map(({ fileAddress, filePublicId }) => ({
+          image: fileAddress,
+          imagePublicId: filePublicId,
+        }))
+
+        await File.insertMany(
+          uploadedFiles.map(
+            ({ filename, mimetype, encoding, filePublicId, fileSize }) =>
+              new File({
+                publicId: filePublicId,
+                filename,
+                mimetype,
+                encoding,
+                size: fileSize,
+                type: 'Post',
+                userId: id,
+              })
+          )
+        )
+      }
+
+      // Delete
+      let deletedImages
+
+      if (deleteImages.length) {
+        deletedImages = postFound.images.filter(({ image }) => deleteImages.indexOf(image) > -1)
+
+        removeUploadedFiles(
+          deletedImages.map((img) => ({ fileType: 'image', fileAddress: img.image }))
+        )
+
+        await File.updateMany(
+          { publicId: { $in: deletedImages.map((img) => img.image) } },
+          { $set: { deleted: true } }
+        )
+      } else {
+        deletedImages = postFound.images
+      }
+
+      await Post.findByIdAndUpdate(id, {
+        $set: {
+          ...(typeof title === 'string' ? { title } : {}),
+          ...(typeof isPrivate === 'boolean' ? { isPrivate } : {}),
+          ...(addImages.length || deleteImages.length
+            ? { images: [...deletedImages, ...uploadedImages] }
+            : {}),
+        },
+      })
+
+      return true
     }
   ),
 
   // FIXME:
   deletePost: combineResolvers(
     isAuthenticated,
-    async (root, { input: { id } }, { Post, Like, Comment, Notification }: IContext) => {
-      try {
-        const postFound = await Post.findOne({ _id: id })
-        if (!postFound) throw new Error('Post not found!')
+    async (root, { input: { id } }, { Post, File, Like, Comment, Notification }: IContext) => {
+      const postFound = await Post.findOne({ _id: id })
+      if (!postFound) throw new Error('Post not found!')
 
-        // Remove post image from upload
-        if (postFound.images) {
-          removeUploadedFiles(
-            postFound.images.map((image) => ({ fileType: 'image', fileAddress: image.image }))
-          )
-        }
+      // Remove post image from upload
+      if (postFound.images) {
+        removeUploadedFiles(
+          postFound.images.map(({ image }) => ({ fileType: 'image', fileAddress: image }))
+        )
 
-        // Find post and remove it
-        await Post.findByIdAndRemove(id)
-
-        // Delete post likes from likes collection
-        await Like.deleteMany({ '_id.postId': id })
-
-        // Delete post comments from comments collection
-        await Comment.deleteMany({ postId: id })
-
-        // Remove notifications from notifications collection
-        // await Notification.deleteMany({ relativeData: id })
-
-        return true
-      } catch {
-        return false
+        await File.updateMany(
+          { publicId: { $in: postFound.images.map(({ image }) => image) } },
+          { $set: { deleted: true } }
+        )
       }
+
+      // Find post and remove it
+      await Post.findByIdAndRemove(id)
+
+      // Delete post likes from likes collection
+      await Like.deleteMany({ '_id.postId': id })
+
+      // Delete post comments from comments collection
+      await Comment.deleteMany({ postId: id })
+
+      // Remove notifications from notifications collection
+      // await Notification.deleteMany({ relativeData: id })
+
+      return true
     }
   ),
 }

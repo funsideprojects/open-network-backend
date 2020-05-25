@@ -151,6 +151,7 @@ const Mutation = {
           size: uploadedFile.fileSize,
           type: 'Comment',
           userId: id,
+          deleted: false,
         }).save()
       }
 
@@ -215,6 +216,11 @@ const Mutation = {
         // Remove old image
         if (commentFound.image) {
           removeUploadedFile('image', commentFound.image)
+
+          await File.updateOne(
+            { publicId: commentFound.imagePublicId },
+            { $set: { deleted: true } }
+          )
         }
 
         // Upload new
@@ -253,7 +259,11 @@ const Mutation = {
   // DONE:
   deleteComment: combineResolvers(
     isAuthenticated,
-    async (root, { input: { id } }, { authUser, Comment, Notification, ERROR_TYPES }: IContext) => {
+    async (
+      root,
+      { input: { id } },
+      { authUser, Comment, File, Notification, ERROR_TYPES }: IContext
+    ) => {
       const commentFound = await Comment.findById(id)
       if (!commentFound) throw new Error(`comment_${ERROR_TYPES.NOT_FOUND}`)
       if (commentFound.authorId.toHexString() !== authUser.id) {
@@ -263,6 +273,8 @@ const Mutation = {
       // Remove uploaded image
       if (commentFound.image) {
         removeUploadedFile('image', commentFound.image)
+
+        await File.updateOne({ publicId: commentFound.imagePublicId }, { $set: { deleted: true } })
       }
 
       // Perform delete

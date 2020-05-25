@@ -32,12 +32,8 @@ input UpdatePostInput {
   id:                 ID!
   title:              String
   isPrivate:          Boolean
-}
-
-input UpdatePostImagesInput {
-  operation:          UpdatePostImageType!
-  images:            [Upload]
-  imagesPublicId:    [String]
+  addImages:         [Upload]
+  deleteImages:      [String]
 }
 
 input DeletePostInput {
@@ -48,11 +44,6 @@ enum GetPostsType {
   USER
   FOLLOWED
   EXPLORE
-}
-
-enum UpdatePostImageType {
-  ADD
-  REMOVE
 }
 
 # ---------------------------------------------------------
@@ -108,9 +99,6 @@ type Mutation {
 
   # DONE: Update post
   updatePost(input: UpdatePostInput!):                          Boolean
-
-  # TODO: Update post's images
-  updatePostImages(input: UpdatePostImagesInput!):              Boolean       @deprecated(reason: "This's a upcoming api, not available at the moment.")
 
   # FIXME: Delete a user post
   deletePost(input: DeletePostInput!):                          Boolean

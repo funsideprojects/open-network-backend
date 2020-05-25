@@ -9,6 +9,7 @@ export interface IFile extends Document {
   size: number
   type: string
   userId: ObjectId
+  deleted: boolean
 }
 
 const fileSchema = new Schema(
@@ -41,6 +42,11 @@ const fileSchema = new Schema(
       type: Schema.Types.ObjectId,
       required: true,
       ref: 'User',
+    },
+    deleted: {
+      type: Boolean,
+      required: true,
+      default: false,
     },
   },
   {
