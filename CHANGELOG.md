@@ -1,3 +1,8 @@
+# Mon-May-25-20 16:00
+
+- Update `File` models.
+- Update `Post` resolvers.
+
 # Wed-May-22-20 12:00
 
 - Update `Comment` resolvers.
