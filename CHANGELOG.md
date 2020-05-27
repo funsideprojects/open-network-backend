@@ -1,3 +1,8 @@
+# Tue-May-26-20 21:00
+
+- Update `Comment`, `Notification`, `Post` models.
+- Update `Comment`, `Follow`, `Like`, `Notification`, `Post` resolvers.
+
 # Mon-May-25-20 16:00
 
 - Update `File` models.

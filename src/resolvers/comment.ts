@@ -1,11 +1,13 @@
+import { GraphQLResolveInfo } from 'graphql'
 import { combineResolvers } from 'graphql-resolvers'
 import { Types } from 'mongoose'
 
-import { NOTIFICATION_CREATED_OR_DELETED } from 'constants/Subscriptions'
-import { IContext, pubSub } from 'utils/apollo-server'
+import { IContext } from 'utils/apollo-server'
+import Logger from 'utils/logger'
 
 import { getRequestedFieldsFromInfo, uploadFile, removeUploadedFile } from './functions'
 import { isAuthenticated } from './high-order-resolvers'
+import { pubsubNotification } from './notification'
 
 // *_:
 const Query = {
@@ -22,7 +24,7 @@ const Query = {
     root,
     { postId, skip, limit },
     { authUser, Post, Comment, ERROR_TYPES }: IContext,
-    info
+    info: GraphQLResolveInfo
   ) => {
     // Ensure post exist
     const postFound = await Post.findById(postId)
@@ -125,20 +127,34 @@ const Mutation = {
     async (
       root,
       { input: { comment, image, stickerId, postId } },
-      { authUser: { id, username }, Post, File, Comment, User, Notification, ERROR_TYPES }: IContext
+      { authUser, Post, Sticker, File, Comment, User, Notification, ERROR_TYPES }: IContext
     ) => {
       if (((!comment || comment.trim() === '') && !image && !stickerId) || (image && stickerId)) {
         throw new Error(ERROR_TYPES.INVALID_INPUT)
       }
 
-      const postFound = await Post.findById(postId).select({ authorId: 1 })
+      let postFound = await Post.findById(postId).select({
+        authorId: 1,
+        isPrivate: 1,
+        subscribers: 1,
+      })
       if (!postFound) throw new Error(`post_${ERROR_TYPES.NOT_FOUND}`)
+      if (postFound.isPrivate && postFound.authorId.toHexString() !== authUser.id) {
+        throw new Error(ERROR_TYPES.PERMISSION_DENIED)
+      }
+
+      let stickerFound
+      if (stickerId) {
+        stickerFound = await Sticker.findById(stickerId)
+
+        if (!stickerFound) throw new Error(`sticker_${ERROR_TYPES.NOT_FOUND}`)
+      }
 
       // Upload image
       let uploadedImage
 
       if (image) {
-        const uploadedFile = await uploadFile(username, image, ['image'])
+        const uploadedFile = await uploadFile(authUser.username, image, ['image'])
         if (!uploadedFile) throw new Error(ERROR_TYPES.UNKNOWN)
 
         uploadedImage = uploadedFile
@@ -150,7 +166,7 @@ const Mutation = {
           encoding: uploadedFile.encoding,
           size: uploadedFile.fileSize,
           type: 'Comment',
-          userId: id,
+          userId: authUser.id,
           deleted: false,
         }).save()
       }
@@ -161,32 +177,92 @@ const Mutation = {
         ...(uploadedImage ? { image: uploadedImage.fileAddress } : {}),
         ...(stickerId ? { stickerId } : {}),
         postId,
-        authorId: id,
+        authorId: authUser.id,
       })
       await newComment.save()
-      const userFound = await User.findById(id)
+      const userFound = await User.findById(authUser.id).select({
+        password: 0,
+        passwordResetToken: 0,
+        passwordResetTokenExpiry: 0,
+      })
 
-      // *: Send noti
-      if (id !== postFound.authorId.toHexString()) {
-        const newNotification = new Notification({
-          type: 'COMMENT',
-          additionalData: `${postId}|${newComment._id}`,
-          fromId: id,
-          toId: postFound.authorId.toHexString(),
-        })
+      // *: Send notification
+      if (!postFound.isPrivate) {
+        if (!postFound.subscribers.some((oid) => oid.toHexString() === authUser.id)) {
+          postFound = await Post.findByIdAndUpdate(
+            postId,
+            { $addToSet: { subscribers: Types.ObjectId(authUser.id) } },
+            { new: true }
+          )
+        }
 
-        await newNotification.save()
+        if (!postFound) {
+          Logger.error(`Post not found for postId ${postId} AFTER UPDATE`)
+        } else {
+          const notificationsToUpdateSeen = await Notification.find({
+            $and: [{ type: 'COMMENT' }, { postId }, { toId: { $in: postFound.subscribers } }],
+          })
 
-        // *: PubSub
-        pubSub.publish(NOTIFICATION_CREATED_OR_DELETED, {
-          notificationCreatedOrDeleted: {
+          await Promise.all([
+            // Update old notifications to unseen
+            Notification.updateMany(
+              {
+                $and: [
+                  { type: 'COMMENT' },
+                  { postId },
+                  {
+                    toId: {
+                      $in: postFound.subscribers.filter(
+                        (subId) => subId.toHexString() !== authUser.id
+                      ),
+                    },
+                  },
+                ],
+              },
+              {
+                $set: { seen: false, commentId: newComment.id },
+                $addToSet: { fromIds: Types.ObjectId(authUser.id) },
+              }
+            ),
+            // Create new notifications for new subscribers
+            Notification.insertMany(
+              postFound.subscribers
+                .filter(
+                  (subId) =>
+                    !notificationsToUpdateSeen.some(
+                      ({ toId }) => toId.toHexString() === subId.toHexString()
+                    ) && subId.toHexString() !== authUser.id
+                )
+                .map(
+                  (subId) =>
+                    new Notification({
+                      type: 'COMMENT',
+                      postId,
+                      commentId: newComment.id,
+                      fromIds: [authUser.id],
+                      toId: subId,
+                    })
+                )
+            ),
+          ])
+
+          // *: PubSub
+          pubsubNotification({
             operation: 'CREATE',
-            notification: Object.assign(newNotification, { from: userFound }),
-          },
-        })
+            type: 'COMMENT',
+            dataId: postFound.id,
+            from: userFound,
+            recipients: postFound.subscribers.filter(
+              (subId) => subId.toHexString() !== authUser.id
+            ),
+          })
+        }
       }
 
-      return Object.assign(newComment, { author: userFound })
+      return Object.assign({}, newComment.toObject(), {
+        sticker: stickerFound,
+        author: userFound,
+      })
     }
   ),
 
@@ -262,11 +338,18 @@ const Mutation = {
     async (
       root,
       { input: { id } },
-      { authUser, Comment, File, Notification, ERROR_TYPES }: IContext
+      { authUser, Post, Comment, File, Notification, ERROR_TYPES }: IContext
     ) => {
       const commentFound = await Comment.findById(id)
       if (!commentFound) throw new Error(`comment_${ERROR_TYPES.NOT_FOUND}`)
-      if (commentFound.authorId.toHexString() !== authUser.id) {
+
+      const postFound = await Post.findById(commentFound.postId)
+      if (!postFound) throw new Error(`post_${ERROR_TYPES.NOT_FOUND}`)
+
+      if (
+        commentFound.authorId.toHexString() !== authUser.id &&
+        postFound.authorId.toHexString() !== authUser.id
+      ) {
         throw new Error(ERROR_TYPES.PERMISSION_DENIED)
       }
 
@@ -278,26 +361,27 @@ const Mutation = {
       }
 
       // Perform delete
-      const deleteResult = await Comment.deleteOne({ _id: Types.ObjectId(id) })
-
-      // *: Delete notification
-      const notificationFound = await Notification.findOneAndRemove({
-        $and: [
-          { type: 'COMMENT' },
-          { additionalData: `${commentFound.postId.toHexString()}|${commentFound.id}` },
-          { fromId: Types.ObjectId(authUser.id) },
-        ],
-      })
+      await Promise.all([
+        // Delete comment
+        Comment.findByIdAndRemove(id),
+        // Delete related notification
+        Notification.findOneAndRemove({
+          $and: [
+            { type: 'COMMENT' },
+            { postId: commentFound.postId },
+            { commentId: commentFound._id },
+          ],
+        }),
+      ])
 
       // *: PubSub
-      pubSub.publish(NOTIFICATION_CREATED_OR_DELETED, {
-        notificationCreatedOrDeleted: {
-          operation: 'DELETE',
-          notification: notificationFound,
-        },
+      pubsubNotification({
+        operation: 'DELETE',
+        type: 'COMMENT',
+        recipients: postFound?.subscribers.filter((subId) => subId.toHexString() !== authUser.id),
       })
 
-      return !!deleteResult.ok
+      return true
     }
   ),
 }

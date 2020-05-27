@@ -3,8 +3,9 @@ import { ObjectId } from 'mongodb'
 
 export interface INotification extends Document {
   type: string
-  additionalData?: string
-  fromId: ObjectId
+  postId?: ObjectId
+  comentId?: ObjectId
+  fromIds: Array<ObjectId>
   toId: ObjectId
   seen: boolean
 }
@@ -15,12 +16,20 @@ const notificationSchema = new Schema(
       type: String,
       required: true,
     },
-    additionalData: String,
-    fromId: {
+    postId: {
       type: Schema.Types.ObjectId,
-      required: true,
-      ref: 'User',
+      ref: 'Post',
     },
+    commentId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Post',
+    },
+    fromIds: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
     toId: {
       type: Schema.Types.ObjectId,
       required: true,
@@ -36,5 +45,18 @@ const notificationSchema = new Schema(
     timestamps: true,
   }
 )
+
+notificationSchema.set('toObject', {
+  versionKey: false,
+  transform: (doc, res) => {
+    // Delete unused field
+    delete res.__v
+
+    // Assign id
+    res.id = doc._id
+
+    return res
+  },
+})
 
 export default model<INotification>('Notification', notificationSchema)

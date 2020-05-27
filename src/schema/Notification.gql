@@ -5,8 +5,9 @@
 type Notification {
   id:                 ID!
   type:               NotificationType!
-  additionalData:     String
-  fromId:             ID!
+  postId:             ID
+  commentId:          ID
+  fromIds:           [ID]
   toId:               ID!
   seen:               Boolean!
 
@@ -18,16 +19,17 @@ enum NotificationType {
   LIKE
   COMMENT
   FOLLOW
-}
-
-enum NotificationOperationType {
-  CREATE
-  DELETE
+  NOTIFICATION
 }
 
 # ---------------------------------------------------------
 # *_: Input Objects
 # ---------------------------------------------------------
+
+input UpdateNotificationSeenInput {
+  id:                 ID
+  seenAll:            Boolean
+}
 
 input DeleteNotificationInput {
   id:                 ID!
@@ -37,12 +39,20 @@ input DeleteNotificationInput {
 # *_: Return Payloads
 # ---------------------------------------------------------
 
+enum NotificationOperationType {
+  CREATE
+  DELETE
+}
+
 type NotificationPayload {
   id:                 ID
-  type:               String
-  additionalData:     String
-  fromId:             ID
-  from:               UserPayload
+  type:               NotificationType
+  postId:             ID
+  post:               PostPayload
+  commentId:          ID
+  comment:            CommentPayload
+  fromIds:           [ID]
+  from:              [UserPayload]
   toId:               ID
 
   createdAt:          String
@@ -55,9 +65,11 @@ type NotificationsPayload {
   notifications:     [NotificationPayload]
 }
 
-type NotificationCreatedOrDeletedPayload {
-  operation:          NotificationOperationType!
-  notification:       NotificationPayload
+type NotificationUpdatedPayload {
+  operation:          NotificationOperationType
+  type:               NotificationType
+  dataId:             ID
+  from:               UserPayload
 }
 
 # ---------------------------------------------------------
@@ -66,7 +78,7 @@ type NotificationCreatedOrDeletedPayload {
 
 type Query {
   # DONE: Gets notifications for authUser
-  getMyNotifications(skip: Int, limit: Int):              NotificationsPayload
+  getNotifications(skip: Int, limit: Int):                              NotificationsPayload
 }
 
 # ---------------------------------------------------------
@@ -75,10 +87,10 @@ type Query {
 
 type Mutation {
   # DONE: Updates notification seen values for user
-  updateNotificationSeen:                                 Boolean
+  updateNotificationSeen(input: UpdateNotificationSeenInput!):          Boolean
 
   # DONE: Deletes a notification
-  deleteNotification(input: DeleteNotificationInput!):    Boolean
+  deleteNotification(input: DeleteNotificationInput!):                  Boolean
 }
 
 # ---------------------------------------------------------
@@ -87,5 +99,5 @@ type Mutation {
 
 type Subscription {
   # DONE: Subscribes to notification created or deleted event
-  notificationCreatedOrDeleted:                           NotificationCreatedOrDeletedPayload
+  notificationUpdated:                                                  NotificationUpdatedPayload
 }

@@ -11,6 +11,7 @@ export interface IPost extends Document {
   images: Array<IPostImage>
   authorId: ObjectId
   isPrivate: boolean
+  subscribers: Array<ObjectId>
 }
 
 const postSchema = new Schema(
@@ -26,6 +27,12 @@ const postSchema = new Schema(
       type: Boolean,
       required: true,
     },
+    subscribers: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
   },
   {
     timestamps: true,

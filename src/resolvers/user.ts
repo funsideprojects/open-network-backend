@@ -1,3 +1,4 @@
+import { GraphQLResolveInfo } from 'graphql'
 import { compare } from 'bcryptjs'
 import { withFilter } from 'apollo-server'
 import { combineResolvers } from 'graphql-resolvers'
@@ -7,7 +8,7 @@ import { pubSub, IContext } from 'utils/apollo-server'
 import { sendEmail } from 'utils/email'
 import { generateToken } from 'utils/jwt'
 
-import { uploadFile, removeUploadedFile } from './functions'
+import { getRequestedFieldsFromInfo, uploadFile, removeUploadedFile } from './functions'
 import { isAuthenticated } from './high-order-resolvers'
 
 const AUTH_TOKEN_EXPIRY = '1y'
@@ -18,24 +19,18 @@ const Query = {
   // DONE:
   getAuthUser: combineResolvers(
     isAuthenticated,
-    async (root, args, { authUser: { id }, User }: IContext) => {
-      const userFound = await User.findById(id)
-
+    async (root, args, { authUser, User }: IContext) => {
       // Update it's isOnline field to true
-      await User.findOneAndUpdate({ _id: id }, { $set: { isOnline: true } })
-
-      return userFound
+      return await User.findByIdAndUpdate(authUser.id, { $set: { isOnline: true } }, { new: true })
     }
   ),
 
   // DONE:
-  getUser: async (root, { username, id }, { User }: IContext) => {
-    if (!username && !id) throw new Error('username or id is required params.')
-    if (username && id) throw new Error('please pass only username or only id as a param')
+  getUser: async (root, { username, id }, { User, ERROR_TYPES }: IContext) => {
+    if ((!username && !id) || (username && id)) throw new Error(ERROR_TYPES.INVALID_INPUT)
 
     const userFound = await User.findOne({ ...(username ? { username } : { _id: id }) })
-
-    if (!userFound) throw new Error(`User with given params doesn't exists.`)
+    if (!userFound) throw new Error(`user_${ERROR_TYPES.NOT_FOUND}`)
 
     return userFound
   },
@@ -43,7 +38,15 @@ const Query = {
   // DONE:
   getUsers: combineResolvers(
     isAuthenticated,
-    async (root, { skip, limit }, { authUser, User, Follow }: IContext) => {
+    async (
+      root,
+      { skip, limit },
+      { authUser, User, Follow }: IContext,
+      info: GraphQLResolveInfo
+    ) => {
+      const result = {}
+      const requestedFields = getRequestedFieldsFromInfo(info)
+
       // Find user ids, that authUser follows
       const currentFollowing = await Follow.find({ '_id.followerId': authUser.id })
 
@@ -54,10 +57,20 @@ const Query = {
           { _id: { $nin: currentFollowing.map(({ _id }) => _id.userId) } },
         ],
       }
-      const count = await User.countDocuments(query)
-      const users = await User.find(query).skip(skip).limit(limit).sort({ createdAt: 'desc' })
 
-      return { users, count }
+      if (requestedFields.includes('count')) {
+        const count = await User.countDocuments(query)
+
+        result['count'] = count
+      }
+
+      if (requestedFields.some((f) => f.includes('users'))) {
+        const users = await User.find(query).skip(skip).limit(limit).sort({ createdAt: 'desc' })
+
+        result['users'] = users
+      }
+
+      return result
     }
   ),
 
@@ -290,58 +303,56 @@ const Mutation = {
   // DONE:
   updateUserInfo: combineResolvers(
     isAuthenticated,
-    async (root, { input: { fullName } }, { authUser: { id }, User }: IContext) => {
+    async (root, { input: { fullName } }, { authUser, User }: IContext) => {
       // FullName validation
       if (fullName.length < 4 || fullName.length > 40) {
         throw new Error(`Full name length should be between 4-40 characters.`)
       }
 
-      const updatedUser = await User.findByIdAndUpdate(id, { $set: { fullName } }, { new: true })
-
-      return updatedUser
+      return await User.findByIdAndUpdate(authUser.id, { $set: { fullName } }, { new: true })
     }
   ),
 
   // DONE:
   updateUserPhoto: combineResolvers(
     isAuthenticated,
-    async (root, { input: { image, isCover } }, { authUser: { id, username }, User }: IContext) => {
+    async (root, { input: { image, isCover } }, { authUser, User, ERROR_TYPES }: IContext) => {
+      if (typeof isCover !== 'boolean') throw new Error(ERROR_TYPES.INVALID_INPUT)
+
+      let fieldsToUpdate
+
       if (image) {
-        const userFound = await User.findById(id)
+        const userFound = await User.findById(authUser.id)
+        if (!userFound) throw new Error(`user_${ERROR_TYPES.NOT_FOUND}`)
 
-        if (!userFound) throw new Error('User not found!')
+        const uploadedFile = await uploadFile(authUser.username, image, ['image'])
+        if (!uploadedFile) throw new Error(ERROR_TYPES.UNKNOWN)
 
-        const uploadedFile = await uploadFile(username, image, ['image'])
-
-        if (!uploadedFile) throw new Error('Failed to update Avatar, try again later')
-
-        const fieldsToUpdate = {
+        fieldsToUpdate = {
           [isCover ? 'coverImage' : 'image']: uploadedFile.fileAddress,
           [isCover ? 'coverImagePublicId' : 'imagePublicId']: uploadedFile.filePublicId,
         }
 
-        removeUploadedFile('image', userFound[isCover ? 'coverImage' : 'image']!)
+        if (userFound[isCover ? 'coverImage' : 'image']) {
+          removeUploadedFile('image', userFound[isCover ? 'coverImage' : 'image']!)
+        }
 
         // Record the file metadata in the DB.
-        await User.findByIdAndUpdate(id, { $set: fieldsToUpdate })
-
-        return fieldsToUpdate
+        await User.findByIdAndUpdate(authUser.id, { $set: fieldsToUpdate })
       } else {
-        const fieldsToUpdate = {
+        fieldsToUpdate = {
           [isCover ? 'coverImage' : 'image']: undefined,
           [isCover ? 'coverImagePublicId' : 'imagePublicId']: undefined,
         }
 
-        const userFound = await User.findByIdAndUpdate(id, {
-          $set: fieldsToUpdate,
-        })
+        const userFound = await User.findByIdAndUpdate(authUser.id, { $set: fieldsToUpdate })
 
-        if (userFound) {
+        if (userFound && userFound[isCover ? 'coverImage' : 'image']) {
           removeUploadedFile('image', userFound[isCover ? 'coverImage' : 'image']!)
         }
-
-        return fieldsToUpdate
       }
+
+      return fieldsToUpdate
     }
   ),
 }

@@ -37,6 +37,22 @@ export function createApolloServer() {
     typeDefs,
     resolvers,
     schemaDirectives,
+    formatError: (err) => {
+      // Don't give the specific errors to the client.
+      if (
+        err.path &&
+        err.path[0] === 'getAuthUser' &&
+        err.message === ERROR_TYPES.UNAUTHENTICATED
+      ) {
+        return new Error('')
+      }
+
+      Logger.error(`[From Apollo]: `, err)
+
+      // Otherwise return the original error.  The error can also
+      // be manipulated in other ways, so long as it's returned.
+      return err
+    },
     context: async ({ req, connection }) => {
       if (connection) return connection.context
 
@@ -90,7 +106,7 @@ export function createApolloServer() {
           // Update user isOnline and lastActiveAt
           await models.User.findByIdAndUpdate(subscriptionContext.authUser.id, {
             isOnline: false,
-            lastActiveAt: new Date().toDateString(),
+            lastActiveAt: new Date(),
           })
         }
       },

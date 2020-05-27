@@ -36,6 +36,10 @@ input UpdatePostInput {
   deleteImages:      [String]
 }
 
+input UnsubscribePost {
+  id:                 ID!
+}
+
 input DeletePostInput {
   id:                 ID!
 }
@@ -62,6 +66,7 @@ type PostPayload {
   likes:             [LikePayload]
   commentCount:       Int
   comments:          [CommentPayload]
+  subscribers:       [ID]
 
   createdAt:          String
   updatedAt:          String
@@ -100,7 +105,10 @@ type Mutation {
   # DONE: Update post
   updatePost(input: UpdatePostInput!):                          Boolean
 
-  # FIXME: Delete a user post
+  # DONE: Unsubscribe post's notifications
+  unsubscribePost(input: UnsubscribePost!):                     Boolean
+
+  # DONE: Delete a user post
   deletePost(input: DeletePostInput!):                          Boolean
 }
 

@@ -1,10 +1,12 @@
 import { GraphQLResolveInfo } from 'graphql'
 import { combineResolvers } from 'graphql-resolvers'
+import { Types } from 'mongoose'
 
 import { IContext } from 'utils/apollo-server'
 
 import { getRequestedFieldsFromInfo } from './functions'
 import { isAuthenticated } from './high-order-resolvers'
+import { pubsubNotification } from './notification'
 
 // *_:
 const Query = {
@@ -128,17 +130,45 @@ const Mutation = {
     async (
       root,
       { input: { userId } },
-      { authUser: { id }, User, Follow, ERROR_TYPES }: IContext
+      { authUser, User, Follow, Notification, ERROR_TYPES }: IContext
     ) => {
-      if (userId === id) throw new Error(ERROR_TYPES.INVALID_OPERATION)
-      if (!(await User.findById(userId))) throw new Error(`user_${ERROR_TYPES.NOT_FOUND}`)
+      if (!userId) throw new Error(ERROR_TYPES.INVALID_INPUT)
+      if (userId === authUser.id) throw new Error(ERROR_TYPES.INVALID_OPERATION)
+
+      const userFound = await User.findById(userId)
+      if (!userFound) throw new Error(`user_${ERROR_TYPES.NOT_FOUND}`)
       if (
-        !!(await Follow.findOne({ $and: [{ '_id.userId': userId }, { '_id.followerId': id }] }))
+        !!(await Follow.findOne({
+          $and: [{ '_id.userId': userId }, { '_id.followerId': authUser.id }],
+        }))
       ) {
         throw new Error(ERROR_TYPES.INVALID_OPERATION)
       }
 
-      await new Follow({ _id: { userId, followerId: id } }).save()
+      const [authUserFound] = await Promise.all([
+        User.findById(authUser.id).select({
+          password: 0,
+          passwordResetToken: 0,
+          passwordResetTokenExpiry: 0,
+        }),
+        // Create follow
+        new Follow({ _id: { userId, followerId: authUser.id } }).save(),
+        // Send noti
+        new Notification({
+          type: 'FOLLOW',
+          fromIds: [Types.ObjectId(authUser.id)],
+          toId: Types.ObjectId(userId),
+        }).save(),
+      ])
+
+      // *: PubSub
+      pubsubNotification({
+        operation: 'CREATE',
+        type: 'FOLLOW',
+        dataId: authUser.id,
+        from: authUserFound,
+        recipients: [Types.ObjectId(userId)],
+      })
 
       return true
     }
@@ -150,12 +180,33 @@ const Mutation = {
     async (
       root,
       { input: { userId } },
-      { authUser: { id }, User, Follow, ERROR_TYPES }: IContext
+      { authUser, User, Follow, Notification, ERROR_TYPES }: IContext
     ) => {
-      if (!(await User.findById(userId))) throw new Error(`user_${ERROR_TYPES.NOT_FOUND}`)
+      if (!userId) throw new Error(ERROR_TYPES.INVALID_INPUT)
 
-      await Follow.deleteOne({
-        $and: [{ '_id.userId': userId }, { '_id.followerId': id }],
+      const userFound = await User.findById(userId)
+      if (!userFound) throw new Error(`user_${ERROR_TYPES.NOT_FOUND}`)
+
+      await Promise.all([
+        // Delete follow
+        Follow.deleteOne({
+          $and: [{ '_id.userId': userId }, { '_id.followerId': authUser.id }],
+        }),
+        // Delete noti
+        Notification.deleteOne({
+          $and: [
+            { type: 'FOLLOW' },
+            { fromIds: { $elemMatch: { $eq: Types.ObjectId(authUser.id) } } },
+            { toId: Types.ObjectId(userId) },
+          ],
+        }),
+      ])
+
+      // *: PubSub
+      pubsubNotification({
+        operation: 'DELETE',
+        type: 'FOLLOW',
+        recipients: [Types.ObjectId(userId)],
       })
 
       return true

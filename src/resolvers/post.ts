@@ -365,7 +365,7 @@ const Mutation = {
     async (
       root,
       { input: { title, images, isPrivate } },
-      { authUser: { id, username }, Post, File, ERROR_TYPES }: IContext
+      { authUser, Post, File, ERROR_TYPES }: IContext
     ) => {
       // Check input
       if (typeof isPrivate !== 'boolean' || (!title && !images.length)) {
@@ -376,7 +376,7 @@ const Mutation = {
       let uploadedImages: Array<any> = []
 
       if (images?.length) {
-        const uploadedFiles = await uploadFiles(username, images, ['image'])
+        const uploadedFiles = await uploadFiles(authUser.username, images, ['image'])
         if (!uploadedFiles.length) throw new Error(ERROR_TYPES.UNKNOWN)
 
         uploadedImages = uploadedFiles.map(({ fileAddress, filePublicId }) => ({
@@ -394,7 +394,7 @@ const Mutation = {
                 encoding,
                 size: fileSize,
                 type: 'Post',
-                userId: id,
+                userId: authUser.id,
               })
           )
         )
@@ -404,8 +404,9 @@ const Mutation = {
       const newPost = await new Post({
         title,
         images: uploadedImages,
-        authorId: id,
+        authorId: authUser.id,
         isPrivate,
+        subscribers: [authUser.id],
       }).save()
 
       return newPost
@@ -424,8 +425,8 @@ const Mutation = {
       if (
         typeof title !== 'string' &&
         typeof isPrivate !== 'boolean' &&
-        !addImages.length &&
-        !deleteImages.length
+        !addImages?.length &&
+        !deleteImages?.length
       ) {
         throw new Error(ERROR_TYPES.INVALID_OPERATION)
       }
@@ -468,7 +469,7 @@ const Mutation = {
       // Delete
       let deletedImages
 
-      if (deleteImages.length) {
+      if (deleteImages?.length) {
         deletedImages = postFound.images.filter(({ image }) => deleteImages.indexOf(image) > -1)
 
         removeUploadedFiles(
@@ -487,7 +488,7 @@ const Mutation = {
         $set: {
           ...(typeof title === 'string' ? { title } : {}),
           ...(typeof isPrivate === 'boolean' ? { isPrivate } : {}),
-          ...(addImages.length || deleteImages.length
+          ...(addImages?.length || deleteImages?.length
             ? { images: [...deletedImages, ...uploadedImages] }
             : {}),
         },
@@ -497,7 +498,23 @@ const Mutation = {
     }
   ),
 
-  // FIXME:
+  // DONE:
+  unsubscribePost: combineResolvers(
+    isAuthenticated,
+    async (root, { input: { id } }, { authUser, Post, ERROR_TYPES }: IContext) => {
+      const postFound = await Post.findById(id)
+      if (!postFound) throw new Error(`post_${ERROR_TYPES.NOT_FOUND}`)
+      if (postFound.isPrivate && postFound.authorId.toHexString() !== authUser.id) {
+        throw new Error(ERROR_TYPES.PERMISSION_DENIED)
+      }
+
+      await Post.updateOne({ _id: id }, { $pull: { subscribers: Types.ObjectId(authUser.id) } })
+
+      return true
+    }
+  ),
+
+  // DONE:
   deletePost: combineResolvers(
     isAuthenticated,
     async (root, { input: { id } }, { Post, File, Like, Comment, Notification }: IContext) => {
@@ -516,17 +533,19 @@ const Mutation = {
         )
       }
 
-      // Find post and remove it
-      await Post.findByIdAndRemove(id)
+      await Promise.all([
+        // Remove post
+        Post.deleteOne({ _id: id }),
 
-      // Delete post likes from likes collection
-      await Like.deleteMany({ '_id.postId': id })
+        // Delete post likes from likes collection
+        Like.deleteMany({ '_id.postId': id }),
 
-      // Delete post comments from comments collection
-      await Comment.deleteMany({ postId: id })
+        // Delete post comments from comments collection
+        Comment.deleteMany({ postId: id }),
 
-      // Remove notifications from notifications collection
-      // await Notification.deleteMany({ relativeData: id })
+        // Remove notifications from notifications collection
+        Notification.deleteMany({ postId: id }),
+      ])
 
       return true
     }
