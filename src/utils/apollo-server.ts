@@ -1,5 +1,6 @@
 import { join } from 'path'
 import { PubSub } from 'apollo-server'
+import { createError } from 'apollo-errors'
 import { ApolloServer } from 'apollo-server-express'
 import { fileLoader, mergeTypes } from 'merge-graphql-schemas'
 
@@ -28,6 +29,26 @@ export const pubSub = new PubSub()
 
 const typeDefs = mergeTypes(fileLoader(join(__dirname, `/../schema/**/*.gql`)), { all: true })
 
+// *: Hide apollo schema from the outside
+const ForbiddenError = createError('ForbiddenError', { message: 'Forbidden' })
+function NoIntrospection(context) {
+  return {
+    Field(node) {
+      const nodeValue = node.name.value
+      if (nodeValue === '__schema' || nodeValue === '__type') {
+        context.reportError(new ForbiddenError())
+      }
+    },
+  }
+}
+
+// *: Format date
+function formatDate(date: Date) {
+  return `[${date.getFullYear()}-${
+    date.getMonth() + 1
+  }-${date.getDate()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}]`
+}
+
 export function createApolloServer() {
   return new ApolloServer({
     uploads: {
@@ -53,6 +74,7 @@ export function createApolloServer() {
       // be manipulated in other ways, so long as it's returned.
       return err
     },
+    validationRules: [NoIntrospection],
     context: async ({ req, connection }) => {
       if (connection) return connection.context
 
@@ -70,16 +92,30 @@ export function createApolloServer() {
         if (connectionParams.authorization) {
           const authUser = await checkAuthorization(connectionParams.authorization)
 
-          Logger.debug(hl.success('[Connected User]:'), authUser!.fullName, +new Date())
+          if (authUser) {
+            Logger.debug(
+              hl.info(`${formatDate(new Date())}`),
+              hl.success('[Connected User]:'),
+              authUser!.fullName
+            )
 
-          // *: Publish user isOnline true
-          pubSub.publish(IS_USER_ONLINE, {
-            isUserOnline: {
-              userId: authUser!.id,
-              isOnline: true,
-              lastActiveAt: +new Date(),
-            },
-          })
+            // *: Publish user isOnline true
+            pubSub.publish(IS_USER_ONLINE, {
+              isUserOnline: {
+                userId: authUser.id,
+                isOnline: true,
+                lastActiveAt: +new Date(),
+              },
+            })
+
+            await models.User.findByIdAndUpdate(authUser.id, { isOnline: true })
+          } else {
+            Logger.error(
+              hl.info(`${formatDate(new Date())}`),
+              hl.error('[Subscription][onConnect]:'),
+              'Unknown connection detected'
+            )
+          }
 
           // Add authUser to socket's context, so we have access to it, in onDisconnect method
           return { authUser }
@@ -90,9 +126,9 @@ export function createApolloServer() {
         const subscriptionContext: ISubscriptionContext = await context.initPromise
         if (subscriptionContext && subscriptionContext.authUser) {
           Logger.debug(
+            hl.info(`${formatDate(new Date())}`),
             hl.error('[Disconnected User]:'),
-            subscriptionContext.authUser!.fullName,
-            +new Date()
+            subscriptionContext.authUser!.fullName
           )
           // *: Publish user isOnline false
           pubSub.publish(IS_USER_ONLINE, {
