@@ -3,6 +3,7 @@ import { PubSub } from 'apollo-server'
 import { createError } from 'apollo-errors'
 import { ApolloServer } from 'apollo-server-express'
 import { fileLoader, mergeTypes } from 'merge-graphql-schemas'
+import { v1 } from 'uuid'
 
 import { ERROR_TYPES } from 'constants/Errors'
 import { IS_USER_ONLINE } from 'constants/Subscriptions'
@@ -12,6 +13,7 @@ import resolvers from 'resolvers'
 import * as hl from 'utils/chalk'
 import { checkAuthorization, IDecodedToken } from 'utils/jwt'
 import Logger from 'utils/logger'
+import { connectionCache } from 'utils/mnemonist'
 
 // *_: Interface
 export interface IContext extends IModels {
@@ -21,6 +23,7 @@ export interface IContext extends IModels {
 
 export interface ISubscriptionContext {
   authUser: IDecodedToken
+  connectionId: string
   ERROR_TYPES: typeof ERROR_TYPES
 }
 
@@ -40,13 +43,6 @@ function NoIntrospection(context) {
       }
     },
   }
-}
-
-// *: Format date
-function formatDate(date: Date) {
-  return `[${date.getFullYear()}-${
-    date.getMonth() + 1
-  }-${date.getDate()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}]`
 }
 
 export function createApolloServer() {
@@ -87,63 +83,104 @@ export function createApolloServer() {
       return Object.assign({ authUser }, models, { ERROR_TYPES })
     },
     subscriptions: {
-      onConnect: async (connectionParams: any, _webSocket) => {
+      onConnect: async (connectionParams, _webSocket) => {
         // *: Check if user is authenticated
-        if (connectionParams.authorization) {
-          const authUser = await checkAuthorization(connectionParams.authorization)
+        if (connectionParams['authorization']) {
+          const authUser = await checkAuthorization(connectionParams['authorization'])
+          let connectionId
 
           if (authUser) {
-            Logger.debug(
-              hl.info(`${formatDate(new Date())}`),
-              hl.success('[Connected User]:'),
-              authUser!.fullName
-            )
+            connectionId = v1()
 
-            // *: Publish user isOnline true
-            pubSub.publish(IS_USER_ONLINE, {
-              isUserOnline: {
+            // *: Logger
+            Logger.debug(hl.success('[Connected User]:'), authUser.fullName)
+
+            // *: Caching connection
+            const hasConnection = connectionCache.get(authUser.id)
+
+            if (!!hasConnection) {
+              // If user has connected somewhere else
+              connectionCache.set(authUser.id, hasConnection + 1)
+            } else {
+              // If it's not
+              connectionCache.set(authUser.id, 1)
+
+              // *: Publish user isOnline true
+              pubSub.publish(IS_USER_ONLINE, {
+                isUserOnline: {
+                  userId: authUser.id,
+                  isOnline: true,
+                  lastActiveAt: +new Date(),
+                },
+              })
+            }
+
+            await Promise.all([
+              // Update user online
+              models.User.findByIdAndUpdate(authUser.id, { isOnline: true }),
+              // Create session
+              new models.UserSession({
                 userId: authUser.id,
-                isOnline: true,
-                lastActiveAt: +new Date(),
-              },
-            })
-
-            await models.User.findByIdAndUpdate(authUser.id, { isOnline: true })
+                connectionId,
+                connectedAt: new Date(),
+                userAgent: _webSocket['upgradeReq']['headers']['user-agent'],
+              }).save(),
+            ])
           } else {
-            Logger.error(
-              hl.info(`${formatDate(new Date())}`),
-              hl.error('[Subscription][onConnect]:'),
-              'Unknown connection detected'
-            )
+            Logger.error(hl.error('[Subscription][onConnect]:'), 'Unknown connection detected')
           }
 
           // Add authUser to socket's context, so we have access to it, in onDisconnect method
-          return { authUser }
+          return { authUser, connectionId }
         }
       },
       onDisconnect: async (_webSocket, context) => {
         // *: Get socket's context
         const subscriptionContext: ISubscriptionContext = await context.initPromise
-        if (subscriptionContext && subscriptionContext.authUser) {
-          Logger.debug(
-            hl.info(`${formatDate(new Date())}`),
-            hl.error('[Disconnected User]:'),
-            subscriptionContext.authUser!.fullName
-          )
-          // *: Publish user isOnline false
-          pubSub.publish(IS_USER_ONLINE, {
-            isUserOnline: {
-              userId: subscriptionContext.authUser.id,
-              isOnline: false,
-              lastActiveAt: +new Date(),
-            },
-          })
+        if (
+          subscriptionContext &&
+          subscriptionContext.authUser &&
+          subscriptionContext.connectionId
+        ) {
+          Logger.debug(hl.error('[Disconnected User]:'), subscriptionContext.authUser!.fullName)
 
-          // Update user isOnline and lastActiveAt
-          await models.User.findByIdAndUpdate(subscriptionContext.authUser.id, {
-            isOnline: false,
-            lastActiveAt: new Date(),
-          })
+          const now = new Date()
+
+          // *: Connection cache
+          const hasConnection = connectionCache.get(subscriptionContext.authUser.id)
+
+          if (!!hasConnection && hasConnection > 1) {
+            // If user still having other connections somewhere else
+            connectionCache.set(subscriptionContext.authUser.id, hasConnection - 1)
+          } else {
+            // If it's not, then it's a fully disconnected
+            connectionCache.set(subscriptionContext.authUser.id, 0)
+
+            // *: Publish user isOnline false
+            pubSub.publish(IS_USER_ONLINE, {
+              isUserOnline: {
+                userId: subscriptionContext.authUser.id,
+                isOnline: false,
+                lastActiveAt: now,
+              },
+            })
+
+            // Update user isOnline and lastActiveAt
+            await models.User.findByIdAndUpdate(subscriptionContext.authUser.id, {
+              isOnline: false,
+              lastActiveAt: now,
+            })
+          }
+
+          // for (const [userId, connectionCount] of connectionCache) {
+          //   console.log(userId, connectionCount, `FULLY DISCONNECTED: ${!connectionCount}`)
+          // }
+
+          // Update session
+          await models.UserSession.findOneAndUpdate(
+            { connectionId: subscriptionContext.connectionId },
+            { $set: { disconnectedAt: now } }
+          )
         }
       },
     },

@@ -19,6 +19,7 @@ async function main() {
   // *_: Connect to database
   if (!process.env.MONGO_URL) throw new Error(`Missing environment variable: MONGO_URL`)
   await connectMongoDB(process.env.MONGO_URL).then(async () => {
+    // *:
     await models.User.updateMany({}, { $set: { isOnline: false } })
   })
 

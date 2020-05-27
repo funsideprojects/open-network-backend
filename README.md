@@ -10,6 +10,6 @@ After running the server, you can navigate to `http://localhost:4000/graphql` wh
 - ✓ Follow
 - ✓ Like
 - Message
-- Notification
+- ✓ Notification
 - ✓ Post
 - ✓ User

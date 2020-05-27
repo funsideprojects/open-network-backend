@@ -9,6 +9,7 @@ import Setting from './Setting'
 import Sticker from './Sticker'
 import StickerCollection from './StickerCollection'
 import User from './User'
+import UserSession from './UserSession'
 
 export interface IModels {
   Comment: typeof Comment
@@ -22,6 +23,7 @@ export interface IModels {
   Sticker: typeof Sticker
   StickerCollection: typeof StickerCollection
   User: typeof User
+  UserSession: typeof UserSession
 }
 
 export default {
@@ -36,4 +38,5 @@ export default {
   Sticker,
   StickerCollection,
   User,
+  UserSession,
 }
