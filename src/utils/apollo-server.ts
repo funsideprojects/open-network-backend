@@ -64,10 +64,8 @@ export function createApolloServer() {
         return new Error('')
       }
 
-      Logger.error(`[From Apollo]: `, err)
+      Logger.error(`[ApolloError]: `, err)
 
-      // Otherwise return the original error.  The error can also
-      // be manipulated in other ways, so long as it's returned.
       return err
     },
     validationRules: [NoIntrospection],
