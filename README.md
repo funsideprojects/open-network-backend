@@ -78,4 +78,5 @@
 ## V2 Feature Update
 
 - [ ] Calendar app
+- [ ] Piano app
 - [ ] Store deleted file in production mode
