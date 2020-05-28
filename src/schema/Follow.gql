@@ -6,7 +6,7 @@ type Follow {
   _id:            FollowID!
 
   createdAt:      String!
-  updatedAt:      String
+  updatedAt:      String!
 }
 
 type FollowID {

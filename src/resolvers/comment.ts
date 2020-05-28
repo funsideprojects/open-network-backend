@@ -11,14 +11,6 @@ import { pubsubNotification } from './notification'
 
 // *_:
 const Query = {
-  // TODO:
-  getMyComments: combineResolvers(
-    isAuthenticated,
-    async (root, { skip, limit }, { authUser: { id }, Comment }: IContext) => {
-      return
-    }
-  ),
-
   // DONE:
   getComments: async (
     root,

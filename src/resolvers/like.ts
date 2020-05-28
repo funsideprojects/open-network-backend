@@ -9,20 +9,6 @@ import { getRequestedFieldsFromInfo } from './functions'
 import { pubsubNotification } from './notification'
 
 const Query = {
-  // TODO:
-  getMyLikes: combineResolvers(
-    isAuthenticated,
-    async (root, { input: { skip, limit } }, { authUser: { id }, Like }: IContext) => {
-      const postsFound = await Like.aggregate([
-        { $match: { '_id.userId': id } },
-        ...(skip ? [{ $skip: skip }] : []),
-        ...(limit ? [{ $limit: limit }] : []),
-      ])
-
-      return postsFound
-    }
-  ),
-
   // DONE:
   getLikes: async (
     root,

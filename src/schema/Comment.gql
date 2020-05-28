@@ -12,7 +12,7 @@ type Comment {
   authorId:         ID!
 
   createdAt:        String!
-  updatedAt:        String
+  updatedAt:        String!
 }
 
 # ---------------------------------------------------------
@@ -49,10 +49,11 @@ type CommentPayload {
   image:            String
   imagePublicId:    String
   stickerId:        ID
-  sticker:          StickerPayload
   postId:           ID
-  post:             PostPayload
   authorId:         ID
+
+  sticker:          StickerPayload
+  post:             PostPayload
   author:           UserPayload
 
   createdAt:        String
@@ -69,10 +70,7 @@ type CommentsPayload {
 # ---------------------------------------------------------
 
 type Query {
-  # TODO: Get comments made by authUser
-  getMyComments(skip: Int, limit: Int):              [CommentPayload]     @deprecated(reason: "This's a upcoming api, not available at the moment.")
-
-  # DONE: Get Post's comment
+  # DONE: Get post's comments
   getComments(postId: ID!, skip: Int, limit: Int):    CommentsPayload
 }
 

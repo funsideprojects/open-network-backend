@@ -8,9 +8,10 @@ type Post {
   images:            [PostImage]
   authorId:           ID!
   isPrivate:          Boolean!
+  subscribers:       [ID]
 
   createdAt:          String!
-  updatedAt:          String
+  updatedAt:          String!
 }
 
 type PostImage {
@@ -36,7 +37,7 @@ input UpdatePostInput {
   deleteImages:      [String]
 }
 
-input UnsubscribePost {
+input UnsubscribePostInput {
   id:                 ID!
 }
 
@@ -60,13 +61,13 @@ type PostPayload {
   images:            [PostImagePayload]
   authorId:           ID
   isPrivate:          Boolean
+  subscribers:       [ID]
 
   author:             UserPayload
   likeCount:          Int
   likes:             [LikePayload]
   commentCount:       Int
   comments:          [CommentPayload]
-  subscribers:       [ID]
 
   createdAt:          String
   updatedAt:          String
@@ -106,7 +107,7 @@ type Mutation {
   updatePost(input: UpdatePostInput!):                          Boolean
 
   # DONE: Unsubscribe post's notifications
-  unsubscribePost(input: UnsubscribePost!):                     Boolean
+  unsubscribePost(input: UnsubscribePostInput!):                Boolean
 
   # DONE: Delete a user post
   deletePost(input: DeletePostInput!):                          Boolean

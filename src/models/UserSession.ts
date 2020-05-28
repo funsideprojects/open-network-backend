@@ -7,6 +7,7 @@ export interface IUserSession extends Document {
   connectedAt: Date
   disconnectedAt?: Date
   userAgent: string
+  ipAddress?: string
 }
 
 const userSessionSchema = new Schema(
@@ -30,6 +31,9 @@ const userSessionSchema = new Schema(
     userAgent: {
       type: String,
       required: true,
+    },
+    ipAddress: {
+      type: String,
     },
   },
   {

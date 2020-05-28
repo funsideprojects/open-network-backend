@@ -12,7 +12,7 @@ type StickerCollection {
   isPrivate:                Boolean!
 
   createdAt:                String!
-  updatedAt:                String
+  updatedAt:                String!
 }
 
 type Sticker {
@@ -22,7 +22,7 @@ type Sticker {
   collectionId:             ID!
 
   createdAt:                String!
-  updatedAt:                String
+  updatedAt:                String!
 }
 
 # ---------------------------------------------------------
@@ -42,15 +42,15 @@ input CreateStickerInput {
   name:                     String!
 }
 
-input UpdateStickerCollectionInput {
+input UpdateStickerInput {
   id:                       ID!
-  operation:                UpdateStickerCollectionType!
-  stickerIds:              [ID]
+  name:                     String!
 }
 
-enum UpdateStickerCollectionType {
-  ADD
-  REMOVE
+input UpdateStickerCollectionInput {
+  id:                       ID!
+  addStickers:             [Upload]
+  deleteStickers:          [ID]
 }
 
 input DeleteStickerCollectionInput {
@@ -68,9 +68,9 @@ type StickerCollectionPayload {
   name:                     String
   description:              String
   authorId:                 ID
-  author:                   UserPayload
   isPrivate:                Boolean
 
+  author:                   UserPayload
   stickers:                [StickerPayload]
 
   createdAt:                String

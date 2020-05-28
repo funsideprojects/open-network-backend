@@ -8,7 +8,7 @@ export interface IMessage extends Document {
   image?: string
   imagePublicId?: string
   stickerId?: ObjectId
-  seen: Array<ObjectId>
+  seenIds: Array<ObjectId>
 }
 
 const messageSchema = new Schema(
@@ -30,7 +30,7 @@ const messageSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'Sticker',
     },
-    seen: [
+    seenIds: [
       {
         type: Schema.Types.ObjectId,
         ref: 'User',
@@ -41,5 +41,18 @@ const messageSchema = new Schema(
     timestamps: true,
   }
 )
+
+messageSchema.set('toObject', {
+  versionKey: false,
+  transform: (doc, res) => {
+    // Delete unused field
+    delete res.__v
+
+    // Assign id
+    res.id = doc._id
+
+    return res
+  },
+})
 
 export default model<IMessage>('Message', messageSchema)

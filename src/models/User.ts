@@ -48,18 +48,33 @@ const userSchema = new Schema(
     coverImagePublicId: String,
     isOnline: {
       type: Boolean,
+      required: true,
       default: false,
     },
-    lastActiveAt: Date,
+    lastActiveAt: {
+      type: Date,
+      required: true,
+    },
   },
   {
     timestamps: true,
   }
 )
 
-/**
- * Hashe the users password when saving it to DB
- */
+userSchema.set('toObject', {
+  versionKey: false,
+  transform: (doc, res) => {
+    // Delete unused field
+    delete res.__v
+
+    // Assign id
+    res.id = doc._id
+
+    return res
+  },
+})
+
+/** Hash user's password when saving it to DB */
 userSchema.pre('save', function (next) {
   if (!this.isModified('password')) return next()
 

@@ -6,7 +6,7 @@ type Like {
   _id:          LikeId!
 
   createdAt:    String!
-  updatedAt:    String
+  updatedAt:    String!
 }
 
 type LikeId {
@@ -44,9 +44,6 @@ type LikesPayload {
 # ---------------------------------------------------------
 
 type Query {
-  # TODO: Get likes made by authUser
-  getMyLikes(skip: Int, limit: Int):          LikesPayload      @deprecated(reason: "This's a upcoming api, not available at the moment.")
-
   # DONE: Get post's likes
   getLikes(postId: ID!):                      LikesPayload
 }

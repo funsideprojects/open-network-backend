@@ -10,10 +10,10 @@ type Message {
   image:            String
   imagePublicId:    String
   stickerId:        String
-  seen:            [String]
+  seenIds:         [ID]
 
-  createdAt:        String
-  updatedAt:        String
+  createdAt:        String!
+  updatedAt:        String!
 }
 
 # ---------------------------------------------------------
@@ -38,13 +38,15 @@ input UpdateMessageSeenInput {
 type MessagePayload {
   id:               ID
   senderId:         ID
-  sender:           UserPayload
   recipientId:      ID
-  recipient:        UserPayload
   message:          String
   image:            String
   imagePublicId:    String
   stickerId:        String
+  seenIds:         [ID]
+
+  sender:           UserPayload
+  recipient:        UserPayload
   sticker:          StickerPayload
   seen:            [UserPayload]
 
@@ -52,13 +54,14 @@ type MessagePayload {
   updatedAt:        String
 }
 
-type ConversationsPayload {
-  id:               ID
-  username:         String
-  fullName:         String
-  image:            String
-  isOnline:         Boolean
+type MessagesPayload {
+  count:            Int
+  messages:        [MessagePayload]
+}
 
+type ConversationsPayload {
+  withUserId:       ID
+  withUser:         UserPayload
   lastMessage:      MessagePayload
   unseenCount:      Int
 }
@@ -68,11 +71,11 @@ type ConversationsPayload {
 # ---------------------------------------------------------
 
 type Query {
-  # Gets authUser's messages
-  getMessages(withUserId: ID!):                [MessagePayload]
+  # TODO: Get authUser's messages
+  getMessages(withUserId: ID!, skip: Int, limit: Int):          MessagesPayload
 
-  # Gets authUser's conversations
-  getConversations:                            [ConversationsPayload]
+  # TODO: Get authUser's conversations
+  getConversations:                                             [ConversationsPayload]
 }
 
 # ---------------------------------------------------------
@@ -80,11 +83,11 @@ type Query {
 # ---------------------------------------------------------
 
 type Mutation {
-  # Creates a message
-  createMessage(input: CreateMessageInput!):            MessagePayload
+  # TODO: Create a message
+  createMessage(input: CreateMessageInput!):                    Boolean
 
-  # Updates message seen values for user
-  updateMessageSeen(input: UpdateMessageSeenInput!):    Boolean
+  # TODO: Update messages seen
+  updateMessageSeen(input: UpdateMessageSeenInput!):            Boolean
 }
 
 # ---------------------------------------------------------
@@ -92,9 +95,9 @@ type Mutation {
 # ---------------------------------------------------------
 
 type Subscription {
-  # Subscribes to message created event
+  # TODO: Subscribe to message created event
   messageCreated(withUserId: ID!):              MessagePayload
 
-  # Subscribes to new conversation event
+  # TODO: Subscribe to new conversation event
   newConversation:                              ConversationsPayload
 }

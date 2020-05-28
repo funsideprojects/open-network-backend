@@ -39,4 +39,17 @@ const postSchema = new Schema(
   }
 )
 
+postSchema.set('toObject', {
+  versionKey: false,
+  transform: (doc, res) => {
+    // Delete unused field
+    delete res.__v
+
+    // Assign id
+    res.id = doc._id
+
+    return res
+  },
+})
+
 export default model<IPost>('Post', postSchema)
