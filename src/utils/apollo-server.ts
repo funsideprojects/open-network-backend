@@ -68,7 +68,7 @@ export function createApolloServer() {
 
       return err
     },
-    validationRules: [NoIntrospection],
+    validationRules: [],
     context: async ({ req, connection }) => {
       if (connection) return connection.context
 
