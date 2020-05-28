@@ -75,7 +75,7 @@
   - Subscriptions:
     - isUserOnline(userId: ID!): IsUserOnlinePayload
 
-## V2 Feature Update:
+## V2 Feature Update
 
-- [] Calendar app
-- [] Store deleted file in production mode
+- [ ] Calendar app
+- [ ] Store deleted file in production mode
