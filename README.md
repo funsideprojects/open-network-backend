@@ -22,7 +22,7 @@
   - Mutations:
     - createLike(input: CreateOrDeleteLikeInput!): Boolean
     - deleteLike(input: CreateOrDeleteLikeInput!): Boolean
-- [] Message
+- [ ] Message
   - Queries:
     - getMessages(withUserId: ID!, skip: Int, limit: Int): MessagesPayload
     - getConversations: [ConversationsPayload]
@@ -32,7 +32,7 @@
   - Subscriptions:
     - messageCreated(withUserId: ID!): MessagePayload
     - newConversation: ConversationsPayload
-- [] Sticker
+- [ ] Sticker
   - Queries:
     - getStickerCollections(skip: Int, limit: Int): StickerCollectionsPayload
     - getInstalledStickerCollections(skip: Int, limit: Int): StickerCollectionsPayload
