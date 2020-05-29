@@ -1,6 +1,10 @@
-
 type File {
   filename:                   String
   mimetype:                   String
   encoding:                   String
+}
+
+type Subscription {
+  # DONE: Subscribe to log file
+  logFileUpdated(secret: String!):            String
 }

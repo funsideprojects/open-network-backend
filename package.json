@@ -13,7 +13,6 @@
     "lint": "tslint -p . -c tslint.json --fix"
   },
   "dependencies": {
-    "apollo-errors": "^1.9.0",
     "apollo-server": "^2.13.1",
     "apollo-server-express": "^2.13.1",
     "bcryptjs": "^2.4.3",
@@ -22,6 +21,7 @@
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "graphql": "^14.6.0",
+    "graphql-depth-limit": "^1.1.0",
     "graphql-resolvers": "^0.4.2",
     "graphql-tools": "^4.0.7",
     "jsonwebtoken": "^8.5.1",
@@ -31,6 +31,7 @@
     "mongoose": "^5.9.14",
     "nodemailer": "^6.4.6",
     "subscriptions-transport-ws": "^0.9.16",
+    "tail": "^2.0.3",
     "tsconfig-paths": "^3.9.0",
     "uuid": "^7.0.2"
   },
@@ -43,6 +44,7 @@
     "@types/mongoose": "5.7.20",
     "@types/node": "^13.9.3",
     "@types/nodemailer": "^6.4.0",
+    "@types/tail": "^2.0.0",
     "@types/uuid": "7.0.3",
     "chalk": "^3.0.0",
     "ncp": "^2.0.0",

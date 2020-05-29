@@ -105,50 +105,10 @@ const Query = {
 }
 
 const Mutation = {
-  // /**
-  //  * Creates a message
-  //  *
-  //  * @param {string} message
-  //  * @param {string} sender
-  //  * @param {string} receiver
-  //  */
-  // createMessage: combineResolvers(
-  //   isAuthenticated,
-  //   async (root, { input: { message, sender, receiver } }, { Message, User }: IContext) => {
-  //     let newMessage: any = await new Message({
-  //       message,
-  //       sender,
-  //       receiver,
-  //     }).save()
-  //     newMessage = await newMessage.populate('sender').populate('receiver').execPopulate()
-  //     // Publish message created event
-  //     pubSub.publish(MESSAGE_CREATED, { messageCreated: newMessage })
-  //     // Check if user already had a conversation
-  //     // if not push their ids to users collection
-  //     const senderUser = await User.findById(sender)
-  //     if (senderUser && !senderUser.messages.includes(receiver)) {
-  //       await User.findOneAndUpdate({ _id: sender }, { $push: { messages: receiver } })
-  //       await User.findOneAndUpdate({ _id: receiver }, { $push: { messages: sender } })
-  //       newMessage.isFirstMessage = true
-  //     }
-  //     // Publish message created event
-  //     pubSub.publish(NEW_CONVERSATION, {
-  //       newConversation: {
-  //         receiverId: receiver,
-  //         id: senderUser!.id,
-  //         username: senderUser!.username,
-  //         fullName: senderUser!.fullName,
-  //         image: senderUser!.image,
-  //         isOnline: senderUser!.isOnline,
-  //         seen: false,
-  //         lastMessage: newMessage.message,
-  //         lastMessageSender: false,
-  //         lastMessageCreatedAt: newMessage.createdAt,
-  //       },
-  //     })
-  //     return newMessage
-  //   }
-  // ),
+  createMessage: combineResolvers(
+    isAuthenticated,
+    async (root, { input: { message, sender, receiver } }, { Message, User }: IContext) => {}
+  ),
   // /**
   //  * Updates message seen values for user
   //  *

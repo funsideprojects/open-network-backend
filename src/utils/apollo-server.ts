@@ -1,6 +1,6 @@
 import { join } from 'path'
 import { PubSub } from 'apollo-server'
-import { createError } from 'apollo-errors'
+import * as depthLimit from 'graphql-depth-limit'
 import { ApolloServer } from 'apollo-server-express'
 import { fileLoader, mergeTypes } from 'merge-graphql-schemas'
 import { v1 } from 'uuid'
@@ -32,19 +32,6 @@ export const pubSub = new PubSub()
 
 const typeDefs = mergeTypes(fileLoader(join(__dirname, `/../schema/**/*.gql`)), { all: true })
 
-// *: Hide apollo schema from the outside
-const ForbiddenError = createError('ForbiddenError', { message: 'Forbidden' })
-function NoIntrospection(context) {
-  return {
-    Field(node) {
-      const nodeValue = node.name.value
-      if (nodeValue === '__schema' || nodeValue === '__type') {
-        context.reportError(new ForbiddenError())
-      }
-    },
-  }
-}
-
 export function createApolloServer() {
   return new ApolloServer({
     uploads: {
@@ -53,6 +40,7 @@ export function createApolloServer() {
     },
     typeDefs,
     resolvers,
+    validationRules: [depthLimit(6)],
     schemaDirectives,
     formatError: (err) => {
       // Don't give the specific errors to the client.
@@ -68,7 +56,6 @@ export function createApolloServer() {
 
       return err
     },
-    validationRules: [],
     context: async ({ req, connection }) => {
       if (connection) return connection.context
 
