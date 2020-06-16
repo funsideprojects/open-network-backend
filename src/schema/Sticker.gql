@@ -98,10 +98,10 @@ type StickerPayload {
 
 type Query {
   # TODO:
-  getStickerCollections(skip: Int, limit: Int):                         StickerCollectionsPayload   @deprecated(reason: "This's a upcoming api, not available at the moment.")
+  getStickerCollections(skip: Int, limit: Int):                         StickerCollectionsPayload   @deprecated(reason: "This's an upcoming api, not available at the moment.")
 
   # TODO:
-  getInstalledStickerCollections(skip: Int, limit: Int):                StickerCollectionsPayload   @deprecated(reason: "This's a upcoming api, not available at the moment.")
+  getInstalledStickerCollections(skip: Int, limit: Int):                StickerCollectionsPayload   @deprecated(reason: "This's an upcoming api, not available at the moment.")
 }
 
 # ---------------------------------------------------------
@@ -110,13 +110,13 @@ type Query {
 
 type Mutation {
   # TODO:
-  createStickerCollection(input: CreateStickerCollectionInput!):          Boolean   @deprecated(reason: "This's a upcoming api, not available at the moment.")
+  createStickerCollection(input: CreateStickerCollectionInput!):          Boolean   @deprecated(reason: "This's an upcoming api, not available at the moment.")
 
   # TODO:
-  updateStickerCollection(input: UpdateStickerCollectionInput!):          Boolean   @deprecated(reason: "This's a upcoming api, not available at the moment.")
+  updateStickerCollection(input: UpdateStickerCollectionInput!):          Boolean   @deprecated(reason: "This's an upcoming api, not available at the moment.")
 
   # TODO:
-  deleteStickerCollection(input: DeleteStickerCollectionInput!):          Boolean   @deprecated(reason: "This's a upcoming api, not available at the moment.")
+  deleteStickerCollection(input: DeleteStickerCollectionInput!):          Boolean   @deprecated(reason: "This's an upcoming api, not available at the moment.")
 }
 
 # ---------------------------------------------------------
