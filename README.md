@@ -1,5 +1,34 @@
 # API for Prism Social Network using Node, GraphQL and MongoDB
 
+## Development
+
+- Create `.env` file base on `.env.template`.
+- Start (See below)
+
+Development mode
+
+```bash
+yarn dev
+```
+
+Build
+
+```bash
+yarn build
+```
+
+Production mode (after build)
+
+```bash
+yarn start
+```
+
+Lint
+
+```bash
+yarn lint
+```
+
 ## TODO
 
 - [x] Comment
@@ -77,6 +106,6 @@
 
 ## V2 Feature Update
 
-- [ ] Calendar app
-- [ ] Piano app
+- [ ] Integrate with Year In Pixels
+- [ ] Add Piano application
 - [ ] Store deleted file in production mode
