@@ -8,7 +8,7 @@ export function info(message: string) {
   return hex('#1890ff')(message)
 }
 
-export function warning(message: string) {
+export function warn(message: string) {
   return hex('#fadb14')(message)
 }
 

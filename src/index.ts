@@ -9,28 +9,27 @@ import { success } from 'utils/chalk'
 import { connectMongoDB } from 'utils/mongoose'
 import Logger from 'utils/logger'
 
-// *_: Process events
+// * Process events
 process.on('exit', (code) => {
   // Application specific logging, throwing an error, or other logic here
   Logger.error('Process exited with code: ', code)
 })
 
 async function main() {
-  // *_: Connect to database
+  // * Connect to database
   if (!process.env.MONGO_URL) throw new Error(`Missing environment variable: MONGO_URL`)
   await connectMongoDB(process.env.MONGO_URL).then(async () => {
-    // *:
     await models.User.updateMany({}, { $set: { isOnline: false } })
   })
 
-  // *_: Initializes application
+  // * Initializes application
   const app = express()
 
   if (process.env.NODE_ENV === 'development') {
     app.use(express.static('uploads'))
   }
 
-  // *_: Enable cors
+  // * Enable cors
   if (process.env.NODE_ENV === 'production' && process.env.FRONTEND_URL) {
     app.use(
       cors({
@@ -40,15 +39,15 @@ async function main() {
     )
   }
 
-  // *_: Create a Apollo Server
+  // * Create a Apollo Server
   const server = createApolloServer()
   server.applyMiddleware({ app, path: '/graphql' })
 
-  // *__: Create http server and add subscriptions to it
+  // * Create http server and add subscriptions to it
   const httpServer = createServer(app)
   server.installSubscriptionHandlers(httpServer)
 
-  // *__: Listen to HTTP and WebSocket server
+  // ? Listen to HTTP and WebSocket server
   const PORT = process.env.PORT || process.env.API_PORT
   httpServer.listen({ port: PORT }, () => {
     if (process.env.NODE_ENV === 'development') {
