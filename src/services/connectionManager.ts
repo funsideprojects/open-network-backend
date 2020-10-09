@@ -28,19 +28,22 @@ class ConnectionManager {
     const connection: IConnection = { id: connectionId, deviceName, connectedAt: new Date().toUTCString() }
 
     if (!this.users.hasOwnProperty(userId)) {
-      this.users.userId = [connection]
+      this.users[userId] = [connection]
     } else {
-      this.users.userId.push(connection)
+      this.users[userId].push(connection)
     }
 
     return connectionId
   }
 
   public removeConnection(userId: string, connectionId: string) {
-    if (!this.users.hasOwnProperty(userId) || !this.users.userId.find((connection) => connection.id === connectionId)) {
+    if (
+      !this.users.hasOwnProperty(userId) ||
+      !this.users[userId].find((connection) => connection.id === connectionId)
+    ) {
       Logger.error(`[Service] [ConnectionManager] Failed to remove connection [${connectionId}] from user [${userId}]`)
     } else {
-      this.users.userId = this.users.userId.filter((connection) => connection.id !== connectionId)
+      this.users[userId] = this.users[userId].filter((connection) => connection.id !== connectionId)
     }
   }
 }

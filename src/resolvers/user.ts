@@ -33,23 +33,21 @@ const Query = {
       const result = {}
       const requestedFields = getRequestedFieldsFromInfo(info)
 
-      // Find user ids, that authUser follows
+      // ? Find user ids, that authUser follows
       const currentFollowing = await Follow.find({ '_id.followerId': authUser.id })
 
-      // Find users that user is not following
+      // ? Find users that user is not following
       const query = {
         $and: [{ _id: { $ne: authUser.id } }, { _id: { $nin: currentFollowing.map(({ _id }) => _id.userId) } }],
       }
 
       if (requestedFields.includes('count')) {
         const count = await User.countDocuments(query)
-
         result['count'] = count
       }
 
       if (requestedFields.some((f) => f.includes('users'))) {
         const users = await User.find(query).skip(skip).limit(limit).sort({ createdAt: 'desc' })
-
         result['users'] = users
       }
 

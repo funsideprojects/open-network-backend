@@ -102,7 +102,7 @@ export function createApolloServer() {
             })
           }
 
-          Logger.debug(hl.success('[Apollo Server] [User Connected]'), authUser.id, authUser.username)
+          Logger.debug('[Apollo Server]', hl.success('[User Connected]'), authUser.id, authUser.username)
 
           // ? Add authUser to socket's context, so we have access to it, in onDisconnect method
           return { authUser, connectionId }
@@ -143,7 +143,7 @@ export function createApolloServer() {
             })
           }
 
-          Logger.debug(hl.success('[Apollo Server] [User Disconnected]'), authUser.id, authUser.username)
+          Logger.debug('[Apollo Server]', hl.error('[User Disconnected]'), authUser.id, authUser.username)
         }
       },
     },
