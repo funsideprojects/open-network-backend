@@ -17,13 +17,10 @@ const RESET_PASSWORD_TOKEN_EXPIRY = 1000 * 60 * 60
 // *_:
 const Query = {
   // DONE:
-  getAuthUser: combineResolvers(
-    isAuthenticated,
-    async (root, args, { authUser, User }: IContext) => {
-      // Update it's isOnline field to true
-      return await User.findByIdAndUpdate(authUser.id, { $set: { isOnline: true } }, { new: true })
-    }
-  ),
+  getAuthUser: combineResolvers(isAuthenticated, async (root, args, { authUser, User }: IContext) => {
+    // Update it's isOnline field to true
+    return await User.findByIdAndUpdate(authUser.id, { $set: { isOnline: true } }, { new: true })
+  }),
 
   // DONE:
   getUser: async (root, { username, id }, { User, ERROR_TYPES }: IContext) => {
@@ -38,12 +35,7 @@ const Query = {
   // DONE:
   getUsers: combineResolvers(
     isAuthenticated,
-    async (
-      root,
-      { skip, limit },
-      { authUser, User, Follow }: IContext,
-      info: GraphQLResolveInfo
-    ) => {
+    async (root, { skip, limit }, { authUser, User, Follow }: IContext, info: GraphQLResolveInfo) => {
       const result = {}
       const requestedFields = getRequestedFieldsFromInfo(info)
 
@@ -52,10 +44,7 @@ const Query = {
 
       // Find users that user is not following
       const query = {
-        $and: [
-          { _id: { $ne: authUser.id } },
-          { _id: { $nin: currentFollowing.map(({ _id }) => _id.userId) } },
-        ],
+        $and: [{ _id: { $ne: authUser.id } }, { _id: { $nin: currentFollowing.map(({ _id }) => _id.userId) } }],
       }
 
       if (requestedFields.includes('count')) {
@@ -82,10 +71,7 @@ const Query = {
       if (!searchQuery) return []
 
       const users = User.find({
-        $or: [
-          { username: new RegExp(searchQuery, 'i') },
-          { fullName: new RegExp(searchQuery, 'i') },
-        ],
+        $or: [{ username: new RegExp(searchQuery, 'i') }, { fullName: new RegExp(searchQuery, 'i') }],
         _id: {
           $ne: id,
         },
@@ -96,30 +82,27 @@ const Query = {
   ),
 
   // DONE:
-  suggestPeople: combineResolvers(
-    isAuthenticated,
-    async (root, args, { authUser: { id }, User, Follow }: IContext) => {
-      const SUGGEST_LIMIT = 5
+  suggestPeople: combineResolvers(isAuthenticated, async (root, args, { authUser: { id }, User, Follow }: IContext) => {
+    const SUGGEST_LIMIT = 5
 
-      // Find people who authUser followed
-      const currentFollowing = await Follow.find({ '_id.followerId': id })
+    // Find people who authUser followed
+    const currentFollowing = await Follow.find({ '_id.followerId': id })
 
-      // Find random users except that authUser follows
-      const query = { _id: { $nin: [...currentFollowing.map(({ _id }) => _id.userId), id] } }
-      const usersCount = await User.countDocuments(query)
-      let random = ~~(Math.random() * usersCount)
+    // Find random users except that authUser follows
+    const query = { _id: { $nin: [...currentFollowing.map(({ _id }) => _id.userId), id] } }
+    const usersCount = await User.countDocuments(query)
+    let random = ~~(Math.random() * usersCount)
 
-      const usersLeft = usersCount - random
-      if (usersLeft < SUGGEST_LIMIT) {
-        random = random - (SUGGEST_LIMIT - usersLeft)
-        if (random < 0) random = 0
-      }
-
-      const randomUsers = await User.find(query).skip(random).limit(SUGGEST_LIMIT)
-
-      return randomUsers.sort(() => Math.random() - 0.5)
+    const usersLeft = usersCount - random
+    if (usersLeft < SUGGEST_LIMIT) {
+      random = random - (SUGGEST_LIMIT - usersLeft)
+      if (random < 0) random = 0
     }
-  ),
+
+    const randomUsers = await User.find(query).skip(random).limit(SUGGEST_LIMIT)
+
+    return randomUsers.sort(() => Math.random() - 0.5)
+  }),
 
   // DONE:
   verifyResetPasswordToken: async (root, { email, token }, { User }: IContext) => {
@@ -174,14 +157,7 @@ const Mutation = {
     }
 
     // Username shouldn't equal to frontend route path
-    const frontEndPages = [
-      'forgot-password',
-      'reset-password',
-      'explore',
-      'people',
-      'notifications',
-      'post',
-    ]
+    const frontEndPages = ['forgot-password', 'reset-password', 'explore', 'people', 'notifications', 'post']
     if (frontEndPages.includes(username)) {
       throw new Error(`This username isn't available. Please try another.`)
     }
@@ -198,11 +174,7 @@ const Mutation = {
     }).save()
 
     return {
-      token: generateToken(
-        { id: newUser.id, email, username, fullName },
-        process.env.SECRET!,
-        AUTH_TOKEN_EXPIRY
-      ),
+      token: generateToken({ id: newUser.id, email, username, fullName }, process.env.SECRET!, AUTH_TOKEN_EXPIRY),
     }
   },
 
@@ -243,10 +215,7 @@ const Mutation = {
       RESET_PASSWORD_TOKEN_EXPIRY
     )
     const passwordResetTokenExpiry = Date.now() + RESET_PASSWORD_TOKEN_EXPIRY
-    await User.findOneAndUpdate(
-      { _id: userFound.id },
-      { passwordResetToken, passwordResetTokenExpiry }
-    )
+    await User.findOneAndUpdate({ _id: userFound.id }, { passwordResetToken, passwordResetTokenExpiry })
 
     // Email user reset link
     const resetLink = `${process.env.FRONTEND_URL}/reset-password?email=${email}&token=${passwordResetToken}`

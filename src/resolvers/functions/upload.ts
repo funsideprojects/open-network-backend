@@ -4,7 +4,7 @@ import { createWriteStream, statSync, unlinkSync } from 'fs'
 import { extname } from 'path'
 import { v4 } from 'uuid'
 
-import Logger from 'utils/logger'
+import { Logger } from 'services'
 
 const IMAGES_UPLOAD_DIR = process.env.IMAGES_UPLOAD_DIR ?? './uploads/images'
 const VIDEOS_UPLOAD_DIR = process.env.VIDEOS_UPLOAD_DIR ?? './uploads/videos'

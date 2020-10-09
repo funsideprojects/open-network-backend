@@ -13,7 +13,7 @@ export interface IUser extends Document {
   coverImage?: string
   coverImagePublicId?: string
   isOnline: boolean
-  lastActiveAt: Date
+  lastActiveAt: string
 }
 
 const userSchema = new Schema(

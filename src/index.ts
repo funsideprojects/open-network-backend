@@ -1,28 +1,28 @@
 import 'dotenv/config'
 import * as express from 'express'
-import { createServer } from 'http'
 import * as cors from 'cors'
+import { createServer } from 'http'
 
 import models from 'models'
-import { createApolloServer } from 'utils/apollo-server'
-import { success } from 'utils/chalk'
-import { connectMongoDB } from 'utils/mongoose'
-import Logger from 'utils/logger'
+import { Logger } from 'services'
+import { hl } from 'utils'
+
+import { createApolloServer } from '_apollo-server'
+import { mongooseConnect } from '_mongoose'
 
 // * Process events
 process.on('exit', (code) => {
-  // Application specific logging, throwing an error, or other logic here
+  // ? Application specific logging, throwing an error, or other logic here
   Logger.error('Process exited with code: ', code)
 })
 
 async function main() {
   // * Connect to database
-  if (!process.env.MONGO_URL) throw new Error(`Missing environment variable: MONGO_URL`)
-  await connectMongoDB(process.env.MONGO_URL).then(async () => {
+  await mongooseConnect().then(async () => {
     await models.User.updateMany({}, { $set: { isOnline: false } })
   })
 
-  // * Initializes application
+  // * Initialize application
   const app = express()
 
   if (process.env.NODE_ENV === 'development') {
@@ -30,29 +30,29 @@ async function main() {
   }
 
   // * Enable cors
-  if (process.env.NODE_ENV === 'production' && process.env.FRONTEND_URL) {
+  if (process.env.CORS_ORIGIN) {
     app.use(
       cors({
-        origin: process.env.FRONTEND_URL,
+        origin: process.env.CORS_ORIGIN,
         credentials: true,
       })
     )
   }
 
   // * Create a Apollo Server
-  const server = createApolloServer()
-  server.applyMiddleware({ app, path: '/graphql' })
+  const apolloServer = createApolloServer()
+  apolloServer.applyMiddleware({ app, path: '/graphql' })
 
   // * Create http server and add subscriptions to it
   const httpServer = createServer(app)
-  server.installSubscriptionHandlers(httpServer)
+  apolloServer.installSubscriptionHandlers(httpServer)
 
-  // ? Listen to HTTP and WebSocket server
+  // * Listen to HTTP and WebSocket server
   const PORT = process.env.PORT || process.env.API_PORT
   httpServer.listen({ port: PORT }, () => {
     if (process.env.NODE_ENV === 'development') {
-      Logger.log(`Server ready at ${success(`http://localhost:${PORT!}${server.graphqlPath}`)}`)
-    } else Logger.log(`Server is ready at port ${PORT}`)
+      Logger.info(`Server ready at ${hl.success(`http://localhost:${PORT!}${apolloServer.graphqlPath}`)}`)
+    } else Logger.info(`Server is ready at port ${PORT}`)
   })
 }
 
