@@ -52,7 +52,7 @@ const userSchema = new Schema(
       default: false,
     },
     lastActiveAt: {
-      type: Date,
+      type: String,
       required: true,
     },
   },

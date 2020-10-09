@@ -11,11 +11,7 @@ function getField(
         case 'Field': {
           const concatenatedFieldName = `${fieldName ? `${fieldName}.` : ''}${fn.name.value}`
           if (fn.selectionSet) {
-            return getField(
-              fragments,
-              fn.selectionSet,
-              fieldName ? concatenatedFieldName : fn.name.value
-            )
+            return getField(fragments, fn.selectionSet, fieldName ? concatenatedFieldName : fn.name.value)
           }
 
           return concatenatedFieldName

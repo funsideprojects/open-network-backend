@@ -2,7 +2,7 @@ import { GraphQLResolveInfo } from 'graphql'
 import { combineResolvers } from 'graphql-resolvers'
 import { Types } from 'mongoose'
 
-import { IContext } from 'utils/apollo-server'
+import { IContext } from '_apollo-server'
 
 import { getRequestedFieldsFromInfo, uploadFiles, removeUploadedFiles } from './functions'
 import { isAuthenticated } from './high-order-resolvers'
@@ -23,10 +23,7 @@ const Query = {
         if (!userFound) throw new Error(`user_${ERROR_TYPES.NOT_FOUND}`)
 
         query = {
-          $and: [
-            { authorId: userFound._id },
-            ...(authUser?.id !== userFound.id ? [{ isPrivate: false }] : []),
-          ],
+          $and: [{ authorId: userFound._id }, ...(authUser?.id !== userFound.id ? [{ isPrivate: false }] : [])],
         }
 
         break
@@ -39,10 +36,7 @@ const Query = {
         query = {
           $or: [
             {
-              $and: [
-                { authorId: { $in: [...currentFollowing.map(({ _id }) => _id.userId)] } },
-                { isPrivate: false },
-              ],
+              $and: [{ authorId: { $in: [...currentFollowing.map(({ _id }) => _id.userId)] } }, { isPrivate: false }],
             },
             {
               authorId: Types.ObjectId(authUser.id),
@@ -67,10 +61,7 @@ const Query = {
             { image: { $ne: [] } },
             {
               authorId: {
-                $nin: [
-                  ...currentFollowing.map(({ _id }) => _id.userId),
-                  Types.ObjectId(authUser.id),
-                ],
+                $nin: [...currentFollowing.map(({ _id }) => _id.userId), Types.ObjectId(authUser.id)],
               },
             },
             { isPrivate: false },
@@ -98,9 +89,7 @@ const Query = {
       const shouldAggregateAuthor = requestedFields.some((f) => f.includes('posts.author'))
       const shouldAggregateLikes = requestedFields.some((f) => f.includes('posts.likes'))
       const shouldAggregateLikeCount = requestedFields.some((f) => f.includes('posts.likeCount'))
-      const shouldAggregateCommentCount = requestedFields.some((f) =>
-        f.includes('posts.commentCount')
-      )
+      const shouldAggregateCommentCount = requestedFields.some((f) => f.includes('posts.commentCount'))
       const shouldAggregateComments = requestedFields.some((f) => f.includes('posts.comments'))
 
       const posts = await Post.aggregate([
@@ -222,12 +211,7 @@ const Query = {
 
   // DONE:
   getPost: combineResolvers(
-    async (
-      root,
-      { postId },
-      { authUser, Post, ERROR_TYPES }: IContext,
-      info: GraphQLResolveInfo
-    ) => {
+    async (root, { postId }, { authUser, Post, ERROR_TYPES }: IContext, info: GraphQLResolveInfo) => {
       const postFound = await Post.findById(postId).select({ _id: 1, isPrivate: 1, authorId: 1 })
       if (!postFound) throw new Error(`post_${ERROR_TYPES.NOT_FOUND}`)
 
@@ -362,11 +346,7 @@ const Mutation = {
   // DONE:
   createPost: combineResolvers(
     isAuthenticated,
-    async (
-      root,
-      { input: { title, images, isPrivate } },
-      { authUser, Post, File, ERROR_TYPES }: IContext
-    ) => {
+    async (root, { input: { title, images, isPrivate } }, { authUser, Post, File, ERROR_TYPES }: IContext) => {
       // Check input
       if (typeof isPrivate !== 'boolean' || (!title && !images.length)) {
         throw new Error(ERROR_TYPES.INVALID_INPUT)
@@ -422,12 +402,7 @@ const Mutation = {
       { authUser, Post, File, ERROR_TYPES }: IContext
     ) => {
       // Check input
-      if (
-        typeof title !== 'string' &&
-        typeof isPrivate !== 'boolean' &&
-        !addImages?.length &&
-        !deleteImages?.length
-      ) {
+      if (typeof title !== 'string' && typeof isPrivate !== 'boolean' && !addImages?.length && !deleteImages?.length) {
         throw new Error(ERROR_TYPES.INVALID_OPERATION)
       }
 
@@ -472,14 +447,9 @@ const Mutation = {
       if (deleteImages?.length) {
         deletedImages = postFound.images.filter(({ image }) => deleteImages.indexOf(image) > -1)
 
-        removeUploadedFiles(
-          deletedImages.map((img) => ({ fileType: 'image', fileAddress: img.image }))
-        )
+        removeUploadedFiles(deletedImages.map((img) => ({ fileType: 'image', fileAddress: img.image })))
 
-        await File.updateMany(
-          { publicId: { $in: deletedImages.map((img) => img.image) } },
-          { $set: { deleted: true } }
-        )
+        await File.updateMany({ publicId: { $in: deletedImages.map((img) => img.image) } }, { $set: { deleted: true } })
       } else {
         deletedImages = postFound.images
       }
@@ -488,9 +458,7 @@ const Mutation = {
         $set: {
           ...(typeof title === 'string' ? { title } : {}),
           ...(typeof isPrivate === 'boolean' ? { isPrivate } : {}),
-          ...(addImages?.length || deleteImages?.length
-            ? { images: [...deletedImages, ...uploadedImages] }
-            : {}),
+          ...(addImages?.length || deleteImages?.length ? { images: [...deletedImages, ...uploadedImages] } : {}),
         },
       })
 
@@ -523,9 +491,7 @@ const Mutation = {
 
       // Remove post image from upload
       if (postFound.images) {
-        removeUploadedFiles(
-          postFound.images.map(({ image }) => ({ fileType: 'image', fileAddress: image }))
-        )
+        removeUploadedFiles(postFound.images.map(({ image }) => ({ fileType: 'image', fileAddress: image })))
 
         await File.updateMany(
           { publicId: { $in: postFound.images.map(({ image }) => image) } },

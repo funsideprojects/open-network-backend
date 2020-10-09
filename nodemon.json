@@ -2,7 +2,7 @@
   "watch": ["src", ".env"],
   "ext": "js ts json gql graphql",
   "ignore": ["src/**/*.spec.ts"],
-  "exec": "ts-node -r tsconfig-paths/register src/index.ts",
+  "exec": "ts-node --transpile-only -r tsconfig-paths/register src/index.ts",
   "events": {
     "start": "node utils/clearConsole.js"
   }

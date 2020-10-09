@@ -4,25 +4,20 @@ import { withFilter } from 'apollo-server'
 import { combineResolvers } from 'graphql-resolvers'
 
 import { IS_USER_ONLINE } from 'constants/Subscriptions'
-import { pubSub, IContext } from 'utils/apollo-server'
-import { sendEmail } from 'utils/email'
-import { generateToken } from 'utils/jwt'
+import { Mailer } from 'services'
+
+import { pubSub, IContext } from '_apollo-server'
+import { generateToken, resetPasswordTokenExpiresIn } from '_jsonwebtoken'
 
 import { getRequestedFieldsFromInfo, uploadFile, removeUploadedFile } from './functions'
 import { isAuthenticated } from './high-order-resolvers'
 
-const AUTH_TOKEN_EXPIRY = '1y'
-const RESET_PASSWORD_TOKEN_EXPIRY = 1000 * 60 * 60
-
-// *_:
 const Query = {
-  // DONE:
   getAuthUser: combineResolvers(isAuthenticated, async (root, args, { authUser, User }: IContext) => {
-    // Update it's isOnline field to true
-    return await User.findByIdAndUpdate(authUser.id, { $set: { isOnline: true } }, { new: true })
+    // * Update user isOnline field to true
+    return await User.findById(authUser.id)
   }),
 
-  // DONE:
   getUser: async (root, { username, id }, { User, ERROR_TYPES }: IContext) => {
     if ((!username && !id) || (username && id)) throw new Error(ERROR_TYPES.INVALID_INPUT)
 
@@ -32,7 +27,6 @@ const Query = {
     return userFound
   },
 
-  // DONE:
   getUsers: combineResolvers(
     isAuthenticated,
     async (root, { skip, limit }, { authUser, User, Follow }: IContext, info: GraphQLResolveInfo) => {
@@ -63,7 +57,6 @@ const Query = {
     }
   ),
 
-  // DONE:
   searchUsers: combineResolvers(
     isAuthenticated,
     async (root, { searchQuery }, { authUser: { id }, User }: IContext) => {
@@ -81,7 +74,6 @@ const Query = {
     }
   ),
 
-  // DONE:
   suggestPeople: combineResolvers(isAuthenticated, async (root, args, { authUser: { id }, User, Follow }: IContext) => {
     const SUGGEST_LIMIT = 5
 
@@ -104,14 +96,13 @@ const Query = {
     return randomUsers.sort(() => Math.random() - 0.5)
   }),
 
-  // DONE:
   verifyResetPasswordToken: async (root, { email, token }, { User }: IContext) => {
     // Check if user exists and token is valid
     const userFound = await User.findOne({
       email,
       passwordResetToken: token,
       passwordResetTokenExpiry: {
-        $gte: Date.now() - RESET_PASSWORD_TOKEN_EXPIRY,
+        $gte: Date.now() - resetPasswordTokenExpiresIn,
       },
     })
     if (!userFound) throw new Error('This token is either invalid or expired!')
@@ -120,9 +111,7 @@ const Query = {
   },
 }
 
-// *_:
 const Mutation = {
-  // DONE:
   signup: async (root, { input: { fullName, email, username, password } }, { User }: IContext) => {
     // Check if user with given email or username already exists
     const userFound = await User.findOne({ $or: [{ email }, { username }] })
@@ -174,11 +163,10 @@ const Mutation = {
     }).save()
 
     return {
-      token: generateToken({ id: newUser.id, email, username, fullName }, process.env.SECRET!, AUTH_TOKEN_EXPIRY),
+      token: generateToken({ id: newUser.id, email, username, fullName }, 'access'),
     }
   },
 
-  // DONE:
   signin: async (root, { input: { emailOrUsername, password } }, { User }: IContext) => {
     const userFound = await User.findOne({
       $or: [{ email: emailOrUsername }, { username: emailOrUsername }],
@@ -196,13 +184,11 @@ const Mutation = {
           username: userFound.username,
           fullName: userFound.fullName,
         },
-        process.env.SECRET!,
-        AUTH_TOKEN_EXPIRY
+        'access'
       ),
     }
   },
 
-  // DONE:
   requestPasswordReset: async (root, { input: { email } }, { User }: IContext) => {
     // Check if user exists
     const userFound = await User.findOne({ email })
@@ -211,10 +197,9 @@ const Mutation = {
     // Set password reset token and it's expiry
     const passwordResetToken = generateToken(
       { id: userFound.id, email, username: userFound.username, fullName: userFound.fullName },
-      process.env.SECRET!,
-      RESET_PASSWORD_TOKEN_EXPIRY
+      'access'
     )
-    const passwordResetTokenExpiry = Date.now() + RESET_PASSWORD_TOKEN_EXPIRY
+    const passwordResetTokenExpiry = Date.now() + resetPasswordTokenExpiresIn
     await User.findOneAndUpdate({ _id: userFound.id }, { passwordResetToken, passwordResetTokenExpiry })
 
     // Email user reset link
@@ -225,7 +210,7 @@ const Mutation = {
       html: resetLink,
     }
 
-    await sendEmail(mailOptions)
+    await Mailer.sendEmail(mailOptions)
 
     // Return success message
     return {
@@ -233,7 +218,6 @@ const Mutation = {
     }
   },
 
-  // DONE:
   resetPassword: async (root, { input: { email, token, password } }, { User }: IContext) => {
     if (!password) throw new Error('Please enter password and Confirm password.')
 
@@ -246,7 +230,7 @@ const Mutation = {
         { passwordResetToken: token },
         {
           passwordResetTokenExpiry: {
-            $gte: Date.now() - RESET_PASSWORD_TOKEN_EXPIRY,
+            $gte: Date.now() - resetPasswordTokenExpiresIn,
           },
         },
       ],
@@ -263,13 +247,11 @@ const Mutation = {
     return {
       token: generateToken(
         { id: userFound.id, email, username: userFound.username, fullName: userFound.fullName },
-        process.env.SECRET!,
-        AUTH_TOKEN_EXPIRY
+        'access'
       ),
     }
   },
 
-  // DONE:
   updateUserInfo: combineResolvers(
     isAuthenticated,
     async (root, { input: { fullName } }, { authUser, User }: IContext) => {
@@ -282,7 +264,6 @@ const Mutation = {
     }
   ),
 
-  // DONE:
   updateUserPhoto: combineResolvers(
     isAuthenticated,
     async (root, { input: { image, isCover } }, { authUser, User, ERROR_TYPES }: IContext) => {
@@ -326,9 +307,7 @@ const Mutation = {
   ),
 }
 
-// *_:
 const Subscription = {
-  // DONE:
   isUserOnline: {
     subscribe: withFilter(
       () => pubSub.asyncIterator(IS_USER_ONLINE),

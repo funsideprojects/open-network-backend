@@ -4,8 +4,8 @@ import { ObjectId } from 'mongodb'
 export interface IUserSession extends Document {
   userId: ObjectId
   connectionId: string
-  connectedAt: Date
-  disconnectedAt?: Date
+  connectedAt: string
+  disconnectedAt?: string
   userAgent: string
   ipAddress?: string
 }

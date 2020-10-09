@@ -15,18 +15,29 @@ interface ITokenMetadata {
 
 export interface IDecodedToken extends IUser, ITokenMetadata {}
 
-const accessTokenExpiresIn = '30m'
-const refreshTokenExpiresIn = '45m'
+const { JWT_SECRET } = process.env
 
-export function generateAccessToken(user: IUser, type: 'accessToken' | 'refreshToken') {
-  return sign(user, process.env.JWT_SECRET, {
-    expiresIn: type === 'accessToken' ? accessTokenExpiresIn : refreshTokenExpiresIn,
+export const accessTokenExpiresIn = '30m'
+export const refreshTokenExpiresIn = '45m'
+export const resetPasswordTokenExpiresIn = 1000 * 60 * 60 // ? 1 hour
+
+export function generateToken(user: IUser, tokenType: 'access' | 'refresh' | 'resetPassword') {
+  if (!JWT_SECRET) throw new Error('[Jsonwebtoken] Missing JWT_SECRET')
+
+  return sign(user, JWT_SECRET, {
+    expiresIn:
+      tokenType === 'access'
+        ? accessTokenExpiresIn
+        : tokenType === 'refresh'
+        ? refreshTokenExpiresIn
+        : resetPasswordTokenExpiresIn,
   })
 }
 
 export function verifyToken(token: string) {
-  const authUser = verify(token, process.env.JWT_SECRET)
+  if (!JWT_SECRET) throw new Error('[Jsonwebtoken] Missing JWT_SECRET')
 
-  if (authUser) return authUser as IDecodedToken
-  else return undefined
+  const authUser = verify(token, JWT_SECRET)
+
+  return authUser ? (authUser as IDecodedToken) : undefined
 }

@@ -5,7 +5,8 @@ import { Types } from 'mongoose'
 import { ObjectId } from 'mongodb'
 
 import { NOTIFICATION_UPDATED } from 'constants/Subscriptions'
-import { IContext, ISubscriptionContext, pubSub } from 'utils/apollo-server'
+
+import { IContext, ISubscriptionContext, pubSub } from '_apollo-server'
 
 import { getRequestedFieldsFromInfo } from './functions'
 import { isAuthenticated } from './high-order-resolvers'
@@ -29,12 +30,7 @@ const Query = {
   // DONE:
   getNotifications: combineResolvers(
     isAuthenticated,
-    async (
-      root,
-      { skip, limit },
-      { authUser, Notification }: IContext,
-      info: GraphQLResolveInfo
-    ) => {
+    async (root, { skip, limit }, { authUser, Notification }: IContext, info: GraphQLResolveInfo) => {
       const result = {}
       const requestedFields = getRequestedFieldsFromInfo(info)
 
@@ -54,9 +50,7 @@ const Query = {
 
       if (requestedFields.some((f) => f.includes('notifications'))) {
         const shouldAggregatePost = requestedFields.some((f) => f.includes('notifications.post.'))
-        const shouldAggregateComment = requestedFields.some((f) =>
-          f.includes('notifications.comment.')
-        )
+        const shouldAggregateComment = requestedFields.some((f) => f.includes('notifications.comment.'))
         const shouldAggregateFrom = requestedFields.some((f) => f.includes('notifications.from.'))
 
         const notifications = await Notification.aggregate([
@@ -70,10 +64,7 @@ const Query = {
                   $lookup: {
                     from: 'posts',
                     let: { postId: '$postId' },
-                    pipeline: [
-                      { $match: { $expr: { $eq: ['$_id', '$$postId'] } } },
-                      { $set: { id: '$_id' } },
-                    ],
+                    pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$postId'] } } }, { $set: { id: '$_id' } }],
                     as: 'post',
                   },
                 },
@@ -86,10 +77,7 @@ const Query = {
                   $lookup: {
                     from: 'comments',
                     let: { commentId: '$commentId' },
-                    pipeline: [
-                      { $match: { $expr: { $eq: ['$_id', '$$commentId'] } } },
-                      { $set: { id: '$_id' } },
-                    ],
+                    pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$commentId'] } } }, { $set: { id: '$_id' } }],
                     as: 'comment',
                   },
                 },
@@ -142,10 +130,7 @@ const Mutation = {
       if (id) await Notification.updateOne({ _id: id }, { $set: { seen: true } })
 
       if (typeof seenAll === 'boolean' && seenAll) {
-        await Notification.updateMany(
-          { $and: [{ toId: id }, { seen: false }] },
-          { $set: { seen: true } }
-        )
+        await Notification.updateMany({ $and: [{ toId: id }, { seen: false }] }, { $set: { seen: true } })
       }
 
       // *: PubSub
@@ -183,21 +168,11 @@ const Mutation = {
 const Subscription = {
   // DONE:
   notificationUpdated: {
-    resolve: ({
-      notificationUpdated: { recipients, ...rest },
-    }: {
-      notificationUpdated: INotificationPayload
-    }) => rest,
+    resolve: ({ notificationUpdated: { recipients, ...rest } }: { notificationUpdated: INotificationPayload }) => rest,
     subscribe: withFilter(
       () => pubSub.asyncIterator(NOTIFICATION_UPDATED),
-      (
-        payload: { notificationUpdated: INotificationPayload },
-        variables,
-        { authUser }: ISubscriptionContext
-      ) => {
-        return payload.notificationUpdated.recipients.some(
-          (rec) => rec.toHexString() === authUser.id
-        )
+      (payload: { notificationUpdated: INotificationPayload }, variables, { authUser }: ISubscriptionContext) => {
+        return payload.notificationUpdated.recipients.some((rec) => rec.toHexString() === authUser.id)
       }
     ),
   },

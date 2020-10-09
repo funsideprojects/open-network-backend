@@ -2,7 +2,7 @@ import { GraphQLResolveInfo } from 'graphql'
 import { combineResolvers } from 'graphql-resolvers'
 import { Types } from 'mongoose'
 
-import { IContext } from 'utils/apollo-server'
+import { IContext } from '_apollo-server'
 
 import { isAuthenticated } from './high-order-resolvers'
 import { getRequestedFieldsFromInfo } from './functions'
@@ -10,12 +10,7 @@ import { pubsubNotification } from './notification'
 
 const Query = {
   // DONE:
-  getLikes: async (
-    root,
-    { postId },
-    { authUser, Post, Like, ERROR_TYPES }: IContext,
-    info: GraphQLResolveInfo
-  ) => {
+  getLikes: async (root, { postId }, { authUser, Post, Like, ERROR_TYPES }: IContext, info: GraphQLResolveInfo) => {
     const postFound = await Post.findById(postId)
     if (!postFound) throw new Error(`post_${ERROR_TYPES.NOT_FOUND}`)
     if (postFound.isPrivate) {
@@ -47,10 +42,7 @@ const Query = {
                 $lookup: {
                   from: 'posts',
                   let: { postId: '$_id.postId' },
-                  pipeline: [
-                    { $match: { $expr: { $eq: ['$_id', '$$postId'] } } },
-                    { $set: { id: '$_id' } },
-                  ],
+                  pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$postId'] } } }, { $set: { id: '$_id' } }],
                   as: 'post',
                 },
               },
@@ -63,10 +55,7 @@ const Query = {
                 $lookup: {
                   from: 'users',
                   let: { userId: '$_id.userId' },
-                  pipeline: [
-                    { $match: { $expr: { $eq: ['$_id', '$$userId'] } } },
-                    { $set: { id: '$_id' } },
-                  ],
+                  pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$userId'] } } }, { $set: { id: '$_id' } }],
                   as: 'user',
                 },
               },
@@ -87,19 +76,13 @@ const Mutation = {
   // DONE:
   createLike: combineResolvers(
     isAuthenticated,
-    async (
-      root,
-      { input: { postId } },
-      { authUser, Post, User, Like, Notification, ERROR_TYPES }: IContext
-    ) => {
+    async (root, { input: { postId } }, { authUser, Post, User, Like, Notification, ERROR_TYPES }: IContext) => {
       if (!postId) throw new Error(ERROR_TYPES.INVALID_INPUT)
 
       const postFound = await Post.findById(postId)
       if (!postFound) throw new Error(`post_${ERROR_TYPES.NOT_FOUND}`)
 
-      if (
-        !!(await Like.findOne({ $and: [{ '_id.postId': postId }, { '_id.userId': authUser.id }] }))
-      ) {
+      if (!!(await Like.findOne({ $and: [{ '_id.postId': postId }, { '_id.userId': authUser.id }] }))) {
         throw new Error(ERROR_TYPES.INVALID_OPERATION)
       }
 
@@ -136,11 +119,7 @@ const Mutation = {
   // DONE:
   deleteLike: combineResolvers(
     isAuthenticated,
-    async (
-      root,
-      { input: { postId } },
-      { authUser, Post, Like, Notification, ERROR_TYPES }: IContext
-    ) => {
+    async (root, { input: { postId } }, { authUser, Post, Like, Notification, ERROR_TYPES }: IContext) => {
       if (!postId) throw new Error(ERROR_TYPES.INVALID_INPUT)
 
       const postFound = await Post.findById(postId)

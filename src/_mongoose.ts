@@ -1,11 +1,14 @@
 import * as mongoose from 'mongoose'
 
-import { Logger, hl } from 'utils'
+import { Logger } from 'services'
+import { hl } from 'utils'
 
 export async function mongooseConnect() {
   mongoose.set('useCreateIndex', true)
 
   const { MONGO_URL } = process.env
+
+  if (!MONGO_URL) throw new Error('[Mongoose] Missing MONGO_URL')
 
   return await mongoose
     .connect(MONGO_URL, {

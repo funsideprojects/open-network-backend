@@ -3,7 +3,7 @@ declare global {
     interface ProcessEnv {
       NODE_ENV: 'development' | 'production'
 
-      PORT: string
+      PORT?: string
 
       LOG_TYPE?: '0' | '1' | '2' | '3' | '4'
 
@@ -20,10 +20,10 @@ declare global {
       CORS_ORIGIN?: string
 
       // ? Mongodb / Mongoose
-      MONGO_URL: string
+      MONGO_URL?: string
 
       // ? Jsonwebtoken
-      JWT_SECRET: string
+      JWT_SECRET?: string
 
       // ? Mailer
       MAIL_SERVICE?: string

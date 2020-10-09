@@ -1,5 +1,5 @@
 # ---------------------------------------------------------
-# *_: Model Objects
+# * Model Objects
 # ---------------------------------------------------------
 
 type User {
@@ -22,7 +22,7 @@ type User {
 }
 
 # ---------------------------------------------------------
-# *_: Input Objects
+# * Input Objects
 # ---------------------------------------------------------
 
 input SignInInput {
@@ -57,7 +57,7 @@ input UpdateUserPhotoInput {
 }
 
 # ---------------------------------------------------------
-# *_: Return Payloads
+# * Return Payloads
 # ---------------------------------------------------------
 
 type UserPayload {
@@ -103,58 +103,58 @@ type UpdateUserPhotoResponse {
 }
 
 # ---------------------------------------------------------
-# *_: Queries
+# * Queries
 # ---------------------------------------------------------
 
 type Query {
-  # DONE: Get the currently logged in user
+  # Get the currently logged in user
   getAuthUser:                                              UserPayload
 
-  # DONE: Get user by username or by id
+  # Get user by username or by id
   getUser(username: String, id: ID):                        UserPayload
 
-  # DONE: Get all users except followed users and authUser
+  # Get all users except followed users and authUser
   getUsers(skip: Int, limit: Int):                          UsersPayload
 
-  # DONE: Searche users by username or fullName
+  # Search users by username or fullName
   searchUsers(searchQuery: String!):                       [UserPayload]
 
-  # DONE: Get Suggestted people for authUser
+  # Get Suggestted people for authUser
   suggestPeople:                                           [UserPayload]
 
-  # DONE: Verify reset password token
+  # Verify reset password token
   verifyResetPasswordToken(email: String, token: String!):  SuccessMessage
 }
 
 # ---------------------------------------------------------
-# *_: Mutations
+# * Mutations
 # ---------------------------------------------------------
 
 type Mutation {
-  # DONE: Sign in user
+  # Sign in user
   signin(input: SignInInput!):                              Token
 
-  # DONE: Sign up user
+  # Sign up user
   signup(input: SignUpInput!):                              Token
 
-  # DONE: Request reset password
+  # Request reset password
   requestPasswordReset(input: RequestPasswordResetInput!):  SuccessMessage
 
-  # DONE: Reset user password
+  # Reset user password
   resetPassword(input: ResetPasswordInput!):                Token
 
-  # DONE: Update user info
+  # Update user info
   updateUserInfo(input: UpdateUserInfoInput!):              UserPayload
 
-  # DONE: Upload user Profile or Cover photo
+  # Upload user Profile or Cover photo
   updateUserPhoto(input: UpdateUserPhotoInput!):            UpdateUserPhotoResponse!
 }
 
 # ---------------------------------------------------------
-# *_: Subscriptions
+# * Subscriptions
 # ---------------------------------------------------------
 
 type Subscription {
-  # DONE: Subscribe to is user online event
+  # Subscribe to is user online event
   isUserOnline(userId: ID!):                                IsUserOnlinePayload
 }

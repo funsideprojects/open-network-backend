@@ -2,8 +2,9 @@ import { GraphQLResolveInfo } from 'graphql'
 import { combineResolvers } from 'graphql-resolvers'
 import { Types } from 'mongoose'
 
-import { IContext } from 'utils/apollo-server'
-import Logger from 'utils/logger'
+import { Logger } from 'services'
+
+import { IContext } from '_apollo-server'
 
 import { getRequestedFieldsFromInfo, uploadFile, removeUploadedFile } from './functions'
 import { isAuthenticated } from './high-order-resolvers'
@@ -40,13 +41,9 @@ const Query = {
     }
 
     if (requestedFields.some((f) => f.includes('comments'))) {
-      const shouldAggregateCommentsSticker = requestedFields.some((f) =>
-        f.includes('comments.sticker.')
-      )
+      const shouldAggregateCommentsSticker = requestedFields.some((f) => f.includes('comments.sticker.'))
       const shouldAggregateCommentsPost = requestedFields.some((f) => f.includes('comments.post.'))
-      const shouldAggregateCommentsAuthor = requestedFields.some((f) =>
-        f.includes('comments.author.')
-      )
+      const shouldAggregateCommentsAuthor = requestedFields.some((f) => f.includes('comments.author.'))
 
       const comments = await Comment.aggregate([
         { $match: { postId: Types.ObjectId(postId) } },
@@ -59,10 +56,7 @@ const Query = {
                 $lookup: {
                   from: 'stickers',
                   let: { stickerId: '$stickerId' },
-                  pipeline: [
-                    { $match: { $expr: { $eq: ['$_id', '$$stickerId'] } } },
-                    { $set: { id: '$_id' } },
-                  ],
+                  pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$stickerId'] } } }, { $set: { id: '$_id' } }],
                   as: 'sticker',
                 },
               },
@@ -75,10 +69,7 @@ const Query = {
                 $lookup: {
                   from: 'posts',
                   let: { postId: '$postId' },
-                  pipeline: [
-                    { $match: { $expr: { $eq: ['$_id', '$$postId'] } } },
-                    { $set: { id: '$_id' } },
-                  ],
+                  pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$postId'] } } }, { $set: { id: '$_id' } }],
                   as: 'post',
                 },
               },
@@ -91,10 +82,7 @@ const Query = {
                 $lookup: {
                   from: 'users',
                   let: { authorId: '$authorId' },
-                  pipeline: [
-                    { $match: { $expr: { $eq: ['$_id', '$$authorId'] } } },
-                    { $set: { id: '$_id' } },
-                  ],
+                  pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$authorId'] } } }, { $set: { id: '$_id' } }],
                   as: 'author',
                 },
               },
@@ -204,9 +192,7 @@ const Mutation = {
                   { postId },
                   {
                     toId: {
-                      $in: postFound.subscribers.filter(
-                        (subId) => subId.toHexString() !== authUser.id
-                      ),
+                      $in: postFound.subscribers.filter((subId) => subId.toHexString() !== authUser.id),
                     },
                   },
                 ],
@@ -221,9 +207,8 @@ const Mutation = {
               postFound.subscribers
                 .filter(
                   (subId) =>
-                    !notificationsToUpdateSeen.some(
-                      ({ toId }) => toId.toHexString() === subId.toHexString()
-                    ) && subId.toHexString() !== authUser.id
+                    !notificationsToUpdateSeen.some(({ toId }) => toId.toHexString() === subId.toHexString()) &&
+                    subId.toHexString() !== authUser.id
                 )
                 .map(
                   (subId) =>
@@ -244,9 +229,7 @@ const Mutation = {
             type: 'COMMENT',
             dataId: postFound.id,
             from: userFound,
-            recipients: postFound.subscribers.filter(
-              (subId) => subId.toHexString() !== authUser.id
-            ),
+            recipients: postFound.subscribers.filter((subId) => subId.toHexString() !== authUser.id),
           })
         }
       }
@@ -285,10 +268,7 @@ const Mutation = {
         if (commentFound.image) {
           removeUploadedFile('image', commentFound.image)
 
-          await File.updateOne(
-            { publicId: commentFound.imagePublicId },
-            { $set: { deleted: true } }
-          )
+          await File.updateOne({ publicId: commentFound.imagePublicId }, { $set: { deleted: true } })
         }
 
         // Upload new
@@ -327,21 +307,14 @@ const Mutation = {
   // DONE:
   deleteComment: combineResolvers(
     isAuthenticated,
-    async (
-      root,
-      { input: { id } },
-      { authUser, Post, Comment, File, Notification, ERROR_TYPES }: IContext
-    ) => {
+    async (root, { input: { id } }, { authUser, Post, Comment, File, Notification, ERROR_TYPES }: IContext) => {
       const commentFound = await Comment.findById(id)
       if (!commentFound) throw new Error(`comment_${ERROR_TYPES.NOT_FOUND}`)
 
       const postFound = await Post.findById(commentFound.postId)
       if (!postFound) throw new Error(`post_${ERROR_TYPES.NOT_FOUND}`)
 
-      if (
-        commentFound.authorId.toHexString() !== authUser.id &&
-        postFound.authorId.toHexString() !== authUser.id
-      ) {
+      if (commentFound.authorId.toHexString() !== authUser.id && postFound.authorId.toHexString() !== authUser.id) {
         throw new Error(ERROR_TYPES.PERMISSION_DENIED)
       }
 
@@ -358,11 +331,7 @@ const Mutation = {
         Comment.findByIdAndRemove(id),
         // Delete related notification
         Notification.findOneAndRemove({
-          $and: [
-            { type: 'COMMENT' },
-            { postId: commentFound.postId },
-            { commentId: commentFound._id },
-          ],
+          $and: [{ type: 'COMMENT' }, { postId: commentFound.postId }, { commentId: commentFound._id }],
         }),
       ])
 

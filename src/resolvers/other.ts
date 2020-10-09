@@ -1,7 +1,9 @@
 import { withFilter } from 'apollo-server'
 
 import { LOG_FILE_UPDATED } from 'constants/Subscriptions'
-import { pubSub } from 'utils/apollo-server'
+
+import { pubSub } from '_apollo-server'
+
 import { startWatching } from 'utils/log-file'
 
 function publishChanges(change: string) {

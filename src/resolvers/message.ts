@@ -2,9 +2,9 @@ import { Types } from 'mongoose'
 import { withFilter } from 'apollo-server'
 import { combineResolvers } from 'graphql-resolvers'
 
-import { isAuthenticated } from './high-order-resolvers/authenticate'
+import { IContext, pubSub } from '_apollo-server'
 
-import { IContext, pubSub } from '../utils/apollo-server'
+import { isAuthenticated } from './high-order-resolvers/authenticate'
 import { MESSAGE_CREATED, NEW_CONVERSATION } from '../constants/Subscriptions'
 
 const Query = {
@@ -149,8 +149,7 @@ const Subscription = {
   newConversation: {
     subscribe: withFilter(
       () => pubSub.asyncIterator(NEW_CONVERSATION),
-      (payload, variables, { authUser }) =>
-        authUser && authUser.id === payload.newConversation.receiverId
+      (payload, variables, { authUser }) => authUser && authUser.id === payload.newConversation.receiverId
     ),
   },
 }

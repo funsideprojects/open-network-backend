@@ -30,7 +30,7 @@ export interface ISubscriptionContext {
 export const pubSub = new PubSub()
 
 // ? Merge Graphql schema
-const typeDefs = mergeTypes(fileLoader(join(__dirname, `/../schema/**/*.gql`)), { all: true })
+const typeDefs = mergeTypes(fileLoader(join(__dirname, `/schema/**/*.gql`)), { all: true })
 
 export function createApolloServer() {
   return new ApolloServer({

@@ -2,7 +2,7 @@ import { GraphQLResolveInfo } from 'graphql'
 import { combineResolvers } from 'graphql-resolvers'
 import { Types } from 'mongoose'
 
-import { IContext } from 'utils/apollo-server'
+import { IContext } from '_apollo-server'
 
 import { getRequestedFieldsFromInfo } from './functions'
 import { isAuthenticated } from './high-order-resolvers'
@@ -55,10 +55,7 @@ const Query = {
           $lookup: {
             from: 'users',
             let: { userId: '$_id.userId' },
-            pipeline: [
-              { $match: { $expr: { $eq: ['$_id', '$$userId'] } } },
-              { $set: { id: '$_id' } },
-            ],
+            pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$userId'] } } }, { $set: { id: '$_id' } }],
             as: 'users',
           },
         },
@@ -104,10 +101,7 @@ const Query = {
           $lookup: {
             from: 'users',
             let: { userId: '$_id.followerId' },
-            pipeline: [
-              { $match: { $expr: { $eq: ['$_id', '$$userId'] } } },
-              { $set: { id: '$_id' } },
-            ],
+            pipeline: [{ $match: { $expr: { $eq: ['$_id', '$$userId'] } } }, { $set: { id: '$_id' } }],
             as: 'users',
           },
         },
@@ -127,11 +121,7 @@ const Mutation = {
   // DONE:
   createFollow: combineResolvers(
     isAuthenticated,
-    async (
-      root,
-      { input: { userId } },
-      { authUser, User, Follow, Notification, ERROR_TYPES }: IContext
-    ) => {
+    async (root, { input: { userId } }, { authUser, User, Follow, Notification, ERROR_TYPES }: IContext) => {
       if (!userId) throw new Error(ERROR_TYPES.INVALID_INPUT)
       if (userId === authUser.id) throw new Error(ERROR_TYPES.INVALID_OPERATION)
 
@@ -177,11 +167,7 @@ const Mutation = {
   // DONE:
   deleteFollow: combineResolvers(
     isAuthenticated,
-    async (
-      root,
-      { input: { userId } },
-      { authUser, User, Follow, Notification, ERROR_TYPES }: IContext
-    ) => {
+    async (root, { input: { userId } }, { authUser, User, Follow, Notification, ERROR_TYPES }: IContext) => {
       if (!userId) throw new Error(ERROR_TYPES.INVALID_INPUT)
 
       const userFound = await User.findById(userId)
