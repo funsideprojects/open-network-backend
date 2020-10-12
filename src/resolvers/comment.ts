@@ -2,11 +2,11 @@ import { GraphQLResolveInfo } from 'graphql'
 import { combineResolvers } from 'graphql-resolvers'
 import { Types } from 'mongoose'
 
-import { Logger } from 'services'
+import { Logger, UploadManager } from 'services'
 
 import { IContext } from '_apollo-server'
 
-import { getRequestedFieldsFromInfo, uploadFile, removeUploadedFile } from './functions'
+import { getRequestedFieldsFromInfo } from './functions'
 import { isAuthenticated } from './high-order-resolvers'
 import { pubsubNotification } from './notification'
 
@@ -134,7 +134,7 @@ const Mutation = {
       let uploadedImage
 
       if (image) {
-        const uploadedFile = await uploadFile(authUser.username, image, ['image'])
+        const uploadedFile = await UploadManager.uploadFile(authUser.username, image, ['image'])
         if (!uploadedFile) throw new Error(ERROR_TYPES.UNKNOWN)
 
         uploadedImage = uploadedFile
@@ -266,13 +266,13 @@ const Mutation = {
       if (image) {
         // Remove old image
         if (commentFound.image) {
-          removeUploadedFile('image', commentFound.image)
+          UploadManager.removeUploadedFile('image', commentFound.image)
 
           await File.updateOne({ publicId: commentFound.imagePublicId }, { $set: { deleted: true } })
         }
 
         // Upload new
-        const uploadedFile = await uploadFile(authUser.username, image, ['image'])
+        const uploadedFile = await UploadManager.uploadFile(authUser.username, image, ['image'])
         if (!uploadedFile) throw new Error(ERROR_TYPES.UNKNOWN)
 
         update['image'] = uploadedFile.fileAddress
@@ -288,7 +288,7 @@ const Mutation = {
         }).save()
       } else if (typeof deleteImage === 'boolean' && deleteImage) {
         if (commentFound.image) {
-          removeUploadedFile('image', commentFound.image)
+          UploadManager.removeUploadedFile('image', commentFound.image)
           update['image'] = null
         }
       }
@@ -320,7 +320,7 @@ const Mutation = {
 
       // Remove uploaded image
       if (commentFound.image) {
-        removeUploadedFile('image', commentFound.image)
+        UploadManager.removeUploadedFile('image', commentFound.image)
 
         await File.updateOne({ publicId: commentFound.imagePublicId }, { $set: { deleted: true } })
       }

@@ -108,22 +108,22 @@ type UpdateUserPhotoResponse {
 
 type Query {
   # Get the currently logged in user
-  getAuthUser:                                              UserPayload
+  getAuthUser:                                                  UserPayload
 
   # Get user by username or by id
-  getUser(username: String, id: ID):                        UserPayload
+  getUser(username: String, id: ID):                            UserPayload
 
   # Get all users except followed users and authUser
-  getUsers(skip: Int, limit: Int):                          UsersPayload
+  getUsers(skip: Int, limit: Int):                              UsersPayload
 
   # Search users by username or fullName
-  searchUsers(searchQuery: String!):                       [UserPayload]
+  searchUsers(searchQuery: String!, skip: Int!, limit: Int!):  [UserPayload]
 
   # Get Suggestted people for authUser
-  suggestPeople:                                           [UserPayload]
+  suggestPeople:                                               [UserPayload]
 
   # Verify reset password token
-  verifyResetPasswordToken(email: String, token: String!):  SuccessMessage
+  verifyResetPasswordToken(email: String, token: String!):      Boolean
 }
 
 # ---------------------------------------------------------
@@ -132,22 +132,22 @@ type Query {
 
 type Mutation {
   # Sign in user
-  signin(input: SignInInput!):                              Token
+  signin(input: SignInInput!):                                  Token
 
   # Sign up user
-  signup(input: SignUpInput!):                              Token
+  signup(input: SignUpInput!):                                  Token
 
   # Request reset password
-  requestPasswordReset(input: RequestPasswordResetInput!):  SuccessMessage
+  requestPasswordReset(input: RequestPasswordResetInput!):      String
 
   # Reset user password
-  resetPassword(input: ResetPasswordInput!):                Token
+  resetPassword(input: ResetPasswordInput!):                    Token
 
   # Update user info
-  updateUserInfo(input: UpdateUserInfoInput!):              UserPayload
+  updateUserInfo(input: UpdateUserInfoInput!):                  UserPayload
 
   # Upload user Profile or Cover photo
-  updateUserPhoto(input: UpdateUserPhotoInput!):            UpdateUserPhotoResponse!
+  updateUserPhoto(input: UpdateUserPhotoInput!):                UpdateUserPhotoResponse!
 }
 
 # ---------------------------------------------------------
@@ -156,5 +156,5 @@ type Mutation {
 
 type Subscription {
   # Subscribe to is user online event
-  isUserOnline(userId: ID!):                                IsUserOnlinePayload
+  isUserOnline(userId: ID!):                                  IsUserOnlinePayload
 }

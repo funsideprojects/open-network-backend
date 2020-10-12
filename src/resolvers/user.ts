@@ -4,17 +4,16 @@ import { withFilter } from 'apollo-server'
 import { combineResolvers } from 'graphql-resolvers'
 
 import { IS_USER_ONLINE } from 'constants/Subscriptions'
-import { Mailer } from 'services'
+import { Mailer, UploadManager } from 'services'
 
 import { pubSub, IContext } from '_apollo-server'
 import { generateToken, resetPasswordTokenExpiresIn } from '_jsonwebtoken'
 
-import { getRequestedFieldsFromInfo, uploadFile, removeUploadedFile } from './functions'
+import { getRequestedFieldsFromInfo } from './functions'
 import { isAuthenticated } from './high-order-resolvers'
 
 const Query = {
   getAuthUser: combineResolvers(isAuthenticated, async (root, args, { authUser, User }: IContext) => {
-    // * Update user isOnline field to true
     return await User.findById(authUser.id)
   }),
 
@@ -33,10 +32,10 @@ const Query = {
       const result = {}
       const requestedFields = getRequestedFieldsFromInfo(info)
 
-      // ? Find user ids, that authUser follows
+      // ? Find userIds that authUser is following
       const currentFollowing = await Follow.find({ '_id.followerId': authUser.id })
 
-      // ? Find users that user is not following
+      // ? Find users that authUser is not following
       const query = {
         $and: [{ _id: { $ne: authUser.id } }, { _id: { $nin: currentFollowing.map(({ _id }) => _id.userId) } }],
       }
@@ -57,45 +56,40 @@ const Query = {
 
   searchUsers: combineResolvers(
     isAuthenticated,
-    async (root, { searchQuery }, { authUser: { id }, User }: IContext) => {
-      // Return an empty array if searchQuery isn't presented
-      if (!searchQuery) return []
-
-      const users = User.find({
+    async (root, { searchQuery, skip, limit }, { authUser: { id }, User }: IContext) => {
+      return await User.find({
         $or: [{ username: new RegExp(searchQuery, 'i') }, { fullName: new RegExp(searchQuery, 'i') }],
-        _id: {
-          $ne: id,
-        },
-      }).limit(50)
-
-      return users
+        _id: { $ne: id },
+      })
+        .skip(skip)
+        .limit(limit)
     }
   ),
 
   suggestPeople: combineResolvers(isAuthenticated, async (root, args, { authUser: { id }, User, Follow }: IContext) => {
-    const SUGGEST_LIMIT = 5
+    const SUGGESTION_LIMIT = 5
 
-    // Find people who authUser followed
+    // ? Find users who authUser is following
     const currentFollowing = await Follow.find({ '_id.followerId': id })
 
-    // Find random users except that authUser follows
+    // ? Find random users except users that authUser is following
     const query = { _id: { $nin: [...currentFollowing.map(({ _id }) => _id.userId), id] } }
     const usersCount = await User.countDocuments(query)
     let random = ~~(Math.random() * usersCount)
 
     const usersLeft = usersCount - random
-    if (usersLeft < SUGGEST_LIMIT) {
-      random = random - (SUGGEST_LIMIT - usersLeft)
+    if (usersLeft < SUGGESTION_LIMIT) {
+      random = random - (SUGGESTION_LIMIT - usersLeft)
       if (random < 0) random = 0
     }
 
-    const randomUsers = await User.find(query).skip(random).limit(SUGGEST_LIMIT)
+    const randomUsers = await User.find(query).skip(random).limit(SUGGESTION_LIMIT)
 
     return randomUsers.sort(() => Math.random() - 0.5)
   }),
 
   verifyResetPasswordToken: async (root, { email, token }, { User }: IContext) => {
-    // Check if user exists and token is valid
+    // ? Check if user exists and token is valid
     const userFound = await User.findOne({
       email,
       passwordResetToken: token,
@@ -103,45 +97,46 @@ const Query = {
         $gte: Date.now() - resetPasswordTokenExpiresIn,
       },
     })
-    if (!userFound) throw new Error('This token is either invalid or expired!')
 
-    return { message: 'Success' }
+    return !!userFound
   },
 }
 
 const Mutation = {
   signup: async (root, { input: { fullName, email, username, password } }, { User }: IContext) => {
-    // Check if user with given email or username already exists
+    // ? Check if user with given email or username already exists
     const userFound = await User.findOne({ $or: [{ email }, { username }] })
     if (userFound) {
       const field = userFound.email === email ? 'email' : 'username'
       throw new Error(`User with given ${field} already exists.`)
     }
 
-    // Empty field validation
-    if (!fullName || !email || !username || !password) throw new Error('All fields are required.')
+    // // ? Empty field validation
+    // if (!fullName.trim() || !email.trim() || !username.trim() || !password.trim()) {
+    //   throw new Error('All fields are required.')
+    // }
 
-    // FullName validation
-    if (fullName.length < 4 || fullName.length > 40) {
-      throw new Error(`Full name length should be between 4-40 characters.`)
-    }
+    // // ? FullName validation
+    // if (fullName.length < 4 || fullName.length > 40) {
+    //   throw new Error(`Full name length should be between 4-40 characters.`)
+    // }
 
-    // Email validation
-    // tslint:disable-next-line
-    const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-    if (!emailRegex.test(String(email).toLowerCase())) {
-      throw new Error('Please enter a valid email address.')
-    }
+    // // Email validation
+    // // tslint:disable-next-line
+    // const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+    // if (!emailRegex.test(String(email).toLowerCase())) {
+    //   throw new Error('Please enter a valid email address.')
+    // }
 
-    // Username validation
-    const usernameRegex = /^(?!.*\.\.)(?!.*\.$)[^\W][\w.]{0,29}$/
-    if (!usernameRegex.test(username)) {
-      throw new Error('Usernames can only use letters, numbers, underscores and periods.')
-    }
+    // // Username validation
+    // const usernameRegex = /^(?!.*\.\.)(?!.*\.$)[^\W][\w.]{0,29}$/
+    // if (!usernameRegex.test(username)) {
+    //   throw new Error('Usernames can only use letters, numbers, underscores and periods.')
+    // }
 
-    if (username.length < 3 || username.length > 20) {
-      throw new Error('Username length should be between 3-50 characters.')
-    }
+    // if (username.length < 3 || username.length > 20) {
+    //   throw new Error('Username length should be between 3-50 characters.')
+    // }
 
     // Username shouldn't equal to frontend route path
     const frontEndPages = ['forgot-password', 'reset-password', 'explore', 'people', 'notifications', 'post']
@@ -211,9 +206,7 @@ const Mutation = {
     await Mailer.sendEmail(mailOptions)
 
     // Return success message
-    return {
-      message: `A link to reset your password has been sent to ${email}`,
-    }
+    return email
   },
 
   resetPassword: async (root, { input: { email, token, password } }, { User }: IContext) => {
@@ -273,7 +266,7 @@ const Mutation = {
         const userFound = await User.findById(authUser.id)
         if (!userFound) throw new Error(`user_${ERROR_TYPES.NOT_FOUND}`)
 
-        const uploadedFile = await uploadFile(authUser.username, image, ['image'])
+        const uploadedFile = await UploadManager.uploadFile(authUser.username, image, ['image'])
         if (!uploadedFile) throw new Error(ERROR_TYPES.UNKNOWN)
 
         fieldsToUpdate = {
@@ -282,7 +275,7 @@ const Mutation = {
         }
 
         if (userFound[isCover ? 'coverImage' : 'image']) {
-          removeUploadedFile('image', userFound[isCover ? 'coverImage' : 'image']!)
+          UploadManager.removeUploadedFile('image', userFound[isCover ? 'coverImage' : 'image']!)
         }
 
         // Record the file metadata in the DB.
@@ -296,7 +289,7 @@ const Mutation = {
         const userFound = await User.findByIdAndUpdate(authUser.id, { $set: fieldsToUpdate })
 
         if (userFound && userFound[isCover ? 'coverImage' : 'image']) {
-          removeUploadedFile('image', userFound[isCover ? 'coverImage' : 'image']!)
+          UploadManager.removeUploadedFile('image', userFound[isCover ? 'coverImage' : 'image']!)
         }
       }
 

@@ -2,9 +2,11 @@ import { GraphQLResolveInfo } from 'graphql'
 import { combineResolvers } from 'graphql-resolvers'
 import { Types } from 'mongoose'
 
+import { UploadManager } from 'services'
+
 import { IContext } from '_apollo-server'
 
-import { getRequestedFieldsFromInfo, uploadFiles, removeUploadedFiles } from './functions'
+import { getRequestedFieldsFromInfo } from './functions'
 import { isAuthenticated } from './high-order-resolvers'
 
 // *_:
@@ -356,8 +358,8 @@ const Mutation = {
       let uploadedImages: Array<any> = []
 
       if (images?.length) {
-        const uploadedFiles = await uploadFiles(authUser.username, images, ['image'])
-        if (!uploadedFiles.length) throw new Error(ERROR_TYPES.UNKNOWN)
+        const uploadedFiles = await UploadManager.uploadFiles(authUser.username, images, ['image'])
+        if (typeof uploadedFiles === 'string') throw new Error(ERROR_TYPES.UNKNOWN)
 
         uploadedImages = uploadedFiles.map(({ fileAddress, filePublicId }) => ({
           image: fileAddress,
@@ -417,8 +419,8 @@ const Mutation = {
       let uploadedImages: Array<any> = []
 
       if (addImages?.length) {
-        const uploadedFiles = await uploadFiles(authUser.username, addImages, ['image'])
-        if (!uploadedFiles.length) throw new Error(ERROR_TYPES.UNKNOWN)
+        const uploadedFiles = await UploadManager.uploadFiles(authUser.username, addImages, ['image'])
+        if (typeof uploadedFiles === 'string') throw new Error(ERROR_TYPES.UNKNOWN)
 
         uploadedImages = uploadedFiles.map(({ fileAddress, filePublicId }) => ({
           image: fileAddress,
@@ -447,7 +449,7 @@ const Mutation = {
       if (deleteImages?.length) {
         deletedImages = postFound.images.filter(({ image }) => deleteImages.indexOf(image) > -1)
 
-        removeUploadedFiles(deletedImages.map((img) => ({ fileType: 'image', fileAddress: img.image })))
+        UploadManager.removeUploadedFiles(deletedImages.map((img) => ({ fileType: 'image', fileAddress: img.image })))
 
         await File.updateMany({ publicId: { $in: deletedImages.map((img) => img.image) } }, { $set: { deleted: true } })
       } else {
@@ -491,7 +493,9 @@ const Mutation = {
 
       // Remove post image from upload
       if (postFound.images) {
-        removeUploadedFiles(postFound.images.map(({ image }) => ({ fileType: 'image', fileAddress: image })))
+        UploadManager.removeUploadedFiles(
+          postFound.images.map(({ image }) => ({ fileType: 'image', fileAddress: image }))
+        )
 
         await File.updateMany(
           { publicId: { $in: postFound.images.map(({ image }) => image) } },

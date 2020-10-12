@@ -37,7 +37,11 @@ export function generateToken(user: IUser, tokenType: 'access' | 'refresh' | 're
 export function verifyToken(token: string) {
   if (!JWT_SECRET) throw new Error('[Jsonwebtoken] Missing JWT_SECRET')
 
-  const authUser = verify(token, JWT_SECRET)
+  try {
+    const authUser = verify(token, JWT_SECRET)
 
-  return authUser ? (authUser as IDecodedToken) : undefined
+    return authUser ? (authUser as IDecodedToken) : undefined
+  } catch {
+    return undefined
+  }
 }
