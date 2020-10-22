@@ -1,6 +1,6 @@
 import { GraphQLResolveInfo } from 'graphql'
 import { compare } from 'bcryptjs'
-import { withFilter } from 'apollo-server'
+import { ApolloError, UserInputError, withFilter } from 'apollo-server'
 import { combineResolvers } from 'graphql-resolvers'
 
 import { IS_USER_ONLINE } from 'constants/Subscriptions'
@@ -103,23 +103,13 @@ const Query = {
 }
 
 const Mutation = {
-  signup: async (root, { input: { fullName, email, username, password } }, { User }: IContext) => {
+  signup: async (root, { input: { fullName, email, username, password } }, { User, HTTP_STATUS_CODE }: IContext) => {
     // ? Check if user with given email or username already exists
     const userFound = await User.findOne({ $or: [{ email }, { username }] })
     if (userFound) {
       const field = userFound.email === email ? 'email' : 'username'
-      throw new Error(`User with given ${field} already exists.`)
+      throw new ApolloError(`User with given ${field} already exists.`, HTTP_STATUS_CODE.)
     }
-
-    // // ? Empty field validation
-    // if (!fullName.trim() || !email.trim() || !username.trim() || !password.trim()) {
-    //   throw new Error('All fields are required.')
-    // }
-
-    // // ? FullName validation
-    // if (fullName.length < 4 || fullName.length > 40) {
-    //   throw new Error(`Full name length should be between 4-40 characters.`)
-    // }
 
     // // Email validation
     // // tslint:disable-next-line
