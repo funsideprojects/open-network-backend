@@ -1,10 +1,11 @@
 import { join } from 'path'
-import { PubSub, AuthenticationError } from 'apollo-server'
+import { PubSub } from 'apollo-server'
 import * as depthLimit from 'graphql-depth-limit'
 import { ApolloServer } from 'apollo-server-express'
 import { fileLoader, mergeTypes } from 'merge-graphql-schemas'
+import 'apollo-cache-control'
 
-import { ERROR_TYPES } from 'constants/Errors'
+import { ERROR_TYPES, HTTP_STATUS_CODE } from 'constants/Errors'
 import { IS_USER_ONLINE } from 'constants/Subscriptions'
 import { schemaDirectives } from 'directives'
 import models, { IModels } from 'models'
@@ -18,6 +19,7 @@ import { IDecodedToken, verifyToken } from '_jsonwebtoken'
 export interface IContext extends IModels {
   authUser: IDecodedToken
   ERROR_TYPES: typeof ERROR_TYPES
+  HTTP_STATUS_CODE: typeof HTTP_STATUS_CODE
 }
 
 export interface ISubscriptionContext {
@@ -40,18 +42,45 @@ export function createApolloServer() {
     },
     typeDefs,
     resolvers,
+    cacheControl: {
+      defaultMaxAge: 0,
+    },
     validationRules: [depthLimit(6)],
+    plugins: [
+      {
+        serverWillStart() {
+          Logger.info('[Apollo Server] Starting!')
+
+          return {
+            serverWillStop() {
+              Logger.info('[Apollo Server] Shutting down')
+            },
+          }
+        },
+        // requestDidStart() {
+        //   return {
+        //     willSendResponse(requestContext) {
+        //       requestContext.response.http?.headers.delete('X-Powered-By')
+        //     },
+        //   }
+        // },
+      },
+    ],
     schemaDirectives,
     debug: process.env.NODE_ENV === 'development',
-    formatError: (err) => {
+    formatError: (error) => {
+      Logger.debug(
+        `[Apollo Server]\r\n`,
+        `[${error.path}]\r\n`,
+        ` [code] ${error.extensions?.code || 'unknown'}\r\n `,
+        error.extensions?.exception?.stacktrace
+      )
+
       // ! Don't give the specific errors to the client.
-      if (err.path && err.path[0] === 'getAuthUser' && err.message === ERROR_TYPES.UNAUTHENTICATED) {
-        return new Error('')
+      return {
+        code: error.extensions?.code,
+        message: error.message,
       }
-
-      Logger.error(`[Apollo Server]`, err)
-
-      return err
     },
     context: async ({ req, connection }) => {
       // ? Subscription

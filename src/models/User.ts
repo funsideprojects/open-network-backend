@@ -1,5 +1,6 @@
 import { Document, Schema, model } from 'mongoose'
 import { hashSync } from 'bcryptjs'
+import { Logger } from 'services'
 
 export interface IUser extends Document {
   fullName: string
@@ -23,14 +24,10 @@ const userSchema = new Schema(
       required: [true, 'Full name is required'],
       validate: {
         validator: (value: string) => {
-          console.log('value', value)
-
           return !(value.length < 4 || value.length > 40 || /\s\s|\r\n|\n|\r/g.test(value))
         },
-        message: (props) => {
-          console.log('zz', props)
-
-          return ''
+        message: () => {
+          return 'Full name is invalid'
         },
       },
     },
@@ -95,13 +92,7 @@ userSchema.pre<IUser>('save', function (next) {
     Object.assign(this, { fullName: this.fullName.trim() })
   }
 
-  console.log('xxx', this.fullName)
-
   next()
 })
-
-// userSchema.post([''], function () {
-
-// })
 
 export default model<IUser>('User', userSchema)

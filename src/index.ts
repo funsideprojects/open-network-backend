@@ -39,6 +39,9 @@ async function main() {
     )
   }
 
+  // * Disable X-Powered-By in response headers
+  app.disable('x-powered-by')
+
   // * Create a Apollo Server
   const apolloServer = createApolloServer()
   apolloServer.applyMiddleware({ app, path: '/graphql' })
