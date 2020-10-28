@@ -1,6 +1,8 @@
 import { Document, Schema, model } from 'mongoose'
 import { hashSync } from 'bcryptjs'
-import { Logger } from 'services'
+
+import { serverTimezoneOffset } from 'constants/Date'
+import { fullNameRegex, emailRegex, usernameRegex, passwordRegex } from 'constants/RegExr'
 
 export interface IUser extends Document {
   fullName: string
@@ -14,7 +16,7 @@ export interface IUser extends Document {
   coverImage?: string
   coverImagePublicId?: string
   isOnline: boolean
-  lastActiveAt: string
+  lastActiveAt: Date
 }
 
 const userSchema = new Schema(
@@ -22,32 +24,47 @@ const userSchema = new Schema(
     fullName: {
       type: String,
       required: [true, 'Full name is required'],
+      minlength: [1, 'Full name length should be between 1 and 40 characters'],
+      maxlength: [40, 'Full name length should be between 1 and 40 characters'],
       validate: {
-        validator: (value: string) => {
-          return !(value.length < 4 || value.length > 40 || /\s\s|\r\n|\n|\r/g.test(value))
-        },
+        validator: fullNameRegex,
         message: () => {
-          return 'Full name is invalid'
+          return 'Full name should not contain double white-spaces, tab and new-line.'
         },
       },
+      trim: true,
     },
     email: {
       type: String,
-      required: true,
+      required: [true, 'Email is required'],
+      validate: {
+        validator: emailRegex,
+        message: () => {
+          return 'Email address is invalid'
+        },
+      },
       lowercase: true,
       trim: true,
       unique: true,
     },
     username: {
       type: String,
-      required: true,
+      required: [true, 'Username is required'],
+      minlength: [3, 'Username length should be between 3 and 20 characters'],
+      maxlength: [20, 'Username length should be between 3 and 20 characters'],
+      validate: {
+        validator: usernameRegex,
+        message: () => {
+          return 'Username can only contain letters(a-z), numbers(0-9), underscore(_) and dot(.)'
+        },
+      },
       lowercase: true,
       trim: true,
       unique: true,
     },
     password: {
       type: String,
-      required: true,
+      required: [true, 'Password is required'],
     },
     passwordResetToken: String,
     passwordResetTokenExpiry: Number,
@@ -61,12 +78,14 @@ const userSchema = new Schema(
       default: false,
     },
     lastActiveAt: {
-      type: String,
+      type: Date,
       required: true,
     },
   },
   {
-    timestamps: true,
+    timestamps: {
+      currentTime: () => +new Date() + serverTimezoneOffset * 60 * 1000,
+    },
   }
 )
 
@@ -80,19 +99,27 @@ userSchema.set('toObject', {
 // ? Hash user's password before saving
 userSchema.pre<IUser>('save', function (next) {
   if (this.isModified('password')) {
+    if (!passwordRegex.test(this.password)) {
+      return next(new Error('Password should not contain white-space, tab and new-line'))
+    }
+
+    if (this.password?.length < 6) {
+      return next(new Error('Minimum password length should be 6 characters.'))
+    }
+
     try {
       const hash = hashSync(this.password, 10)
       Object.assign(this, { password: hash })
+
+      return next()
     } catch (error) {
-      next(error)
+      return next(error)
     }
   }
-
-  if (this.isModified('fullName')) {
-    Object.assign(this, { fullName: this.fullName.trim() })
-  }
-
-  next()
 })
+
+// userSchema.post<IUser>('save', (doc, next) => {
+//   next()
+// })
 
 export default model<IUser>('User', userSchema)

@@ -17,9 +17,9 @@ export interface IDecodedToken extends IUser, ITokenMetadata {}
 
 const { JWT_SECRET } = process.env
 
-export const accessTokenExpiresIn = '30m'
-export const refreshTokenExpiresIn = '45m'
-export const resetPasswordTokenExpiresIn = 1000 * 60 * 60 // ? 1 hour
+export const accessTokenMaxAge = 1000 * 60 * 5 // ? 5 mins
+export const refreshTokenMaxAge = 1000 * 60 * 6 // ? 6 mins
+export const resetPasswordTokenMaxAge = 1000 * 60 * 60 // ? 1 hour
 
 export function generateToken(user: IUser, tokenType: 'access' | 'refresh' | 'resetPassword') {
   if (!JWT_SECRET) throw new Error('[Jsonwebtoken] Missing JWT_SECRET')
@@ -27,10 +27,10 @@ export function generateToken(user: IUser, tokenType: 'access' | 'refresh' | 're
   return sign(user, JWT_SECRET, {
     expiresIn:
       tokenType === 'access'
-        ? accessTokenExpiresIn
+        ? accessTokenMaxAge
         : tokenType === 'refresh'
-        ? refreshTokenExpiresIn
-        : resetPasswordTokenExpiresIn,
+        ? refreshTokenMaxAge
+        : resetPasswordTokenMaxAge,
   })
 }
 

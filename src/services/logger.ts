@@ -9,46 +9,56 @@ enum LOG_TYPES {
 }
 
 class Logger {
-  private logType: string | number
+  private _logType: string | number
   private _logger = console.log
 
   constructor() {
-    this.logType = process.env.LOG_TYPE ?? LOG_TYPES.INFO
+    this._logType = process.env.LOG_TYPE ?? LOG_TYPES.INFO
   }
 
-  private pid = () => `[${process.pid}]`
-
-  private time = () => {
+  public get time() {
     const now = new Date()
 
     return hl.warn(`[${now.toLocaleDateString()} ${now.toLocaleTimeString([], { hour12: false })}]`)
   }
 
+  public get pid() {
+    return `[${process.pid}]`
+  }
+
+  public get prefixes() {
+    return `${this.time} ${this.pid}`
+  }
+
+  private get logType() {
+    return this._logType
+  }
+
   public setLogType(type: LOG_TYPES) {
-    this.logType = type
+    this._logType = type
   }
 
   public error(...messages: Array<any>) {
     if (this.logType >= LOG_TYPES.ERROR) {
-      this._logger(this.time(), this.pid(), hl.error('[ERROR]'), ...messages)
+      this._logger(this.prefixes, hl.error('[ERROR]'), ...messages)
     }
   }
 
   public warn(...messages: Array<any>) {
     if (this.logType >= LOG_TYPES.WARN) {
-      this._logger(this.time(), this.pid(), hl.warn('[WARN]'), ...messages)
+      this._logger(this.prefixes, hl.warn('[WARN]'), ...messages)
     }
   }
 
   public info(...messages: Array<any>) {
     if (this.logType >= LOG_TYPES.INFO) {
-      this._logger(this.time(), this.pid(), hl.info('[INFO]'), ...messages)
+      this._logger(this.prefixes, hl.info('[INFO]'), ...messages)
     }
   }
 
   public debug(...messages: Array<any>) {
     if (this.logType >= LOG_TYPES.DEBUG) {
-      this._logger(this.time(), this.pid(), hl.debug('[DEBUG]'), ...messages)
+      this._logger(this.prefixes, hl.debug('[DEBUG]'), ...messages)
     }
   }
 }

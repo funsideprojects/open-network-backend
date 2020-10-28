@@ -1,9 +1,14 @@
-import { AuthenticationError } from 'apollo-server'
+import { ApolloError } from 'apollo-server'
 import { GraphQLResolveInfo } from 'graphql'
 import { skip } from 'graphql-resolvers'
 
 import { IContext } from '_apollo-server'
 
-export function isAuthenticated(root: any, args: any, { authUser }: IContext, info: GraphQLResolveInfo) {
-  return authUser ? skip : new AuthenticationError('Unauthenticated')
+export function isAuthenticated(
+  root: any,
+  args: any,
+  { authUser, HTTP_STATUS_CODE }: IContext,
+  info: GraphQLResolveInfo
+) {
+  return authUser ? skip : new ApolloError('Unauthenticated', HTTP_STATUS_CODE.Unauthorized)
 }

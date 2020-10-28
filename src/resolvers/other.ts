@@ -12,7 +12,7 @@ function publishChanges(change: string) {
   })
 }
 
-startWatching(publishChanges)
+// startWatching(publishChanges)
 
 // *_:
 const Subscription = {

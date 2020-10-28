@@ -43,7 +43,6 @@ input RequestPasswordResetInput {
 
 input ResetPasswordInput {
   email:                      String!
-  token:                      String!
   password:                   String!
 }
 
@@ -87,10 +86,6 @@ type IsUserOnlinePayload {
   lastActiveAt:               String
 }
 
-type Token {
-  token:                      String!
-}
-
 type SuccessMessage {
   message:                    String!
 }
@@ -132,16 +127,16 @@ type Query {
 
 type Mutation {
   # Sign in user
-  signin(input: SignInInput!):                                  Token
+  signin(input: SignInInput!):                                  Boolean
 
   # Sign up user
-  signup(input: SignUpInput!):                                  Token
+  signup(input: SignUpInput!):                                  Boolean
 
   # Request reset password
   requestPasswordReset(input: RequestPasswordResetInput!):      String
 
   # Reset user password
-  resetPassword(input: ResetPasswordInput!):                    Token
+  resetPassword(input: ResetPasswordInput!):                    Boolean
 
   # Update user info
   updateUserInfo(input: UpdateUserInfoInput!):                  UserPayload

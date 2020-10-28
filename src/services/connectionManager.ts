@@ -2,6 +2,7 @@ import { v1 as uuid } from 'uuid'
 
 import { Logger } from 'services'
 
+// ? Interfaces
 interface IConnection {
   id: string
   deviceName: string
@@ -13,10 +14,10 @@ interface IUsers {
 }
 
 class ConnectionManager {
-  private users: IUsers = {}
+  private _users: IUsers = {}
 
-  public get connectionsList() {
-    return this.users
+  public get users() {
+    return this._users
   }
 
   public userConnections(userId: string) {

@@ -1,11 +1,13 @@
 import { join } from 'path'
+import { Request } from 'express'
 import { PubSub } from 'apollo-server'
 import * as depthLimit from 'graphql-depth-limit'
 import { ApolloServer } from 'apollo-server-express'
 import { fileLoader, mergeTypes } from 'merge-graphql-schemas'
 import 'apollo-cache-control'
+import * as ora from 'ora'
 
-import { ERROR_TYPES, HTTP_STATUS_CODE } from 'constants/Errors'
+import { ERROR_TYPES, HTTP_STATUS_CODE, ERROR_MESSAGE } from 'constants/Errors'
 import { IS_USER_ONLINE } from 'constants/Subscriptions'
 import { schemaDirectives } from 'directives'
 import models, { IModels } from 'models'
@@ -20,6 +22,8 @@ export interface IContext extends IModels {
   authUser: IDecodedToken
   ERROR_TYPES: typeof ERROR_TYPES
   HTTP_STATUS_CODE: typeof HTTP_STATUS_CODE
+  ERROR_MESSAGE: typeof ERROR_MESSAGE
+  req: Request
 }
 
 export interface ISubscriptionContext {
@@ -34,7 +38,12 @@ export const pubSub = new PubSub()
 // ? Merge Graphql schema
 const typeDefs = mergeTypes(fileLoader(join(__dirname, `/schema/**/*.gql`)), { all: true })
 
-export function createApolloServer() {
+export function createApolloServer(graphqlPath: string) {
+  const spinner = ora({ spinner: 'dots', prefixText: Logger.prefixes })
+  const prefix = `[Apollo Server]`
+
+  spinner.start(`${prefix} Starting`)
+
   return new ApolloServer({
     uploads: {
       maxFileSize: 5 * 1000 * 1000, // ? 5 MB
@@ -45,11 +54,16 @@ export function createApolloServer() {
     cacheControl: {
       defaultMaxAge: 0,
     },
+    playground: {
+      settings: {
+        'request.credentials': 'include',
+      },
+    },
     validationRules: [depthLimit(6)],
     plugins: [
       {
-        serverWillStart() {
-          Logger.info('[Apollo Server] Starting!')
+        serverWillStart(e) {
+          spinner.succeed(`${prefix} Ready at ${hl.success(graphqlPath)}`)
 
           return {
             serverWillStop() {
@@ -58,27 +72,31 @@ export function createApolloServer() {
           }
         },
         // requestDidStart() {
-        //   return {
-        //     willSendResponse(requestContext) {
-        //       requestContext.response.http?.headers.delete('X-Powered-By')
-        //     },
-        //   }
+        // return {
+        //   willSendResponse(requestContext) {
+        //     requestContext.response.http?.headers.delete('X-Powered-By')
+        //   },
+        // }
         // },
       },
     ],
     schemaDirectives,
     debug: process.env.NODE_ENV === 'development',
     formatError: (error) => {
-      Logger.debug(
-        `[Apollo Server]\r\n`,
-        `[${error.path}]\r\n`,
-        ` [code] ${error.extensions?.code || 'unknown'}\r\n `,
-        error.extensions?.exception?.stacktrace
-      )
+      const errorCode = error.extensions?.code
+
+      console.log(error)
+
+      // Logger.error(
+      //   `[Apollo Server]\r\n`,
+      //   `[${error.path}]: {\r\n`,
+      //   ` Code: ${errorCode || 'unknown'},\r\n `,
+      //   hl.error(error.extensions?.exception?.stacktrace.join('\r\n'))
+      // )
 
       // ! Don't give the specific errors to the client.
       return {
-        code: error.extensions?.code,
+        code: errorCode === 'INTERNAL_SERVER_ERROR' ? HTTP_STATUS_CODE['Internal Server Error'] : errorCode,
         message: error.message,
       }
     },
@@ -88,11 +106,12 @@ export function createApolloServer() {
 
       // ? Query / Mutation
       let authUser: ReturnType<typeof verifyToken>
-      if (req.headers.authorization && req.headers.authorization !== 'null') {
-        authUser = verifyToken(req.headers.authorization)
+
+      if (req.cookies.accessToken) {
+        authUser = verifyToken(req.cookies.accessToken)
       }
 
-      return Object.assign({ authUser }, models, { ERROR_TYPES })
+      return Object.assign({}, { authUser }, models, { ERROR_TYPES, HTTP_STATUS_CODE, ERROR_MESSAGE }, { req })
     },
     subscriptions: {
       onConnect: async (connectionParams, _webSocket) => {
@@ -142,7 +161,7 @@ export function createApolloServer() {
         const subscriptionContext: ISubscriptionContext = await context.initPromise
         if (subscriptionContext?.authUser && subscriptionContext?.connectionId) {
           const { authUser, connectionId } = subscriptionContext
-          const now = new Date().toUTCString()
+          const now = new Date()
 
           // * Update connection manager
           ConnectionManager.removeConnection(authUser.id, connectionId)

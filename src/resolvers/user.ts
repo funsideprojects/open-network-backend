@@ -1,13 +1,15 @@
 import { GraphQLResolveInfo } from 'graphql'
 import { compare } from 'bcryptjs'
-import { ApolloError, UserInputError, withFilter } from 'apollo-server'
+import { ApolloError, withFilter } from 'apollo-server'
 import { combineResolvers } from 'graphql-resolvers'
 
+import { serverTimezoneOffset } from 'constants/Date'
 import { IS_USER_ONLINE } from 'constants/Subscriptions'
-import { Mailer, UploadManager } from 'services'
+import { frontEndPages } from 'constants/UsernameBlacklist'
+import { Logger, Mailer, UploadManager } from 'services'
 
 import { pubSub, IContext } from '_apollo-server'
-import { generateToken, resetPasswordTokenExpiresIn } from '_jsonwebtoken'
+import { generateToken, accessTokenMaxAge, refreshTokenMaxAge, resetPasswordTokenMaxAge } from '_jsonwebtoken'
 
 import { getRequestedFieldsFromInfo } from './functions'
 import { isAuthenticated } from './high-order-resolvers'
@@ -94,7 +96,7 @@ const Query = {
       email,
       passwordResetToken: token,
       passwordResetTokenExpiry: {
-        $gte: Date.now() - resetPasswordTokenExpiresIn,
+        $gte: Date.now() - resetPasswordTokenMaxAge,
       },
     })
 
@@ -103,77 +105,113 @@ const Query = {
 }
 
 const Mutation = {
-  signup: async (root, { input: { fullName, email, username, password } }, { User, HTTP_STATUS_CODE }: IContext) => {
-    // ? Check if user with given email or username already exists
-    const userFound = await User.findOne({ $or: [{ email }, { username }] })
-    if (userFound) {
-      const field = userFound.email === email ? 'email' : 'username'
-      throw new ApolloError(`User with given ${field} already exists.`, HTTP_STATUS_CODE.)
+  // * Sign up
+  signup: async (
+    root,
+    { input: { fullName, email, username, password } },
+    { User, HTTP_STATUS_CODE, ERROR_MESSAGE, req }: IContext
+  ) => {
+    // ? Throw error if express middleware failed to initialize response
+    if (!req.res) {
+      throw new ApolloError(ERROR_MESSAGE['Internal Server Error'], HTTP_STATUS_CODE['Internal Server Error'])
     }
 
-    // // Email validation
-    // // tslint:disable-next-line
-    // const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-    // if (!emailRegex.test(String(email).toLowerCase())) {
-    //   throw new Error('Please enter a valid email address.')
-    // }
-
-    // // Username validation
-    // const usernameRegex = /^(?!.*\.\.)(?!.*\.$)[^\W][\w.]{0,29}$/
-    // if (!usernameRegex.test(username)) {
-    //   throw new Error('Usernames can only use letters, numbers, underscores and periods.')
-    // }
-
-    // if (username.length < 3 || username.length > 20) {
-    //   throw new Error('Username length should be between 3-50 characters.')
-    // }
-
-    // Username shouldn't equal to frontend route path
-    const frontEndPages = ['forgot-password', 'reset-password', 'explore', 'people', 'notifications', 'post']
     if (frontEndPages.includes(username)) {
-      throw new Error(`This username isn't available. Please try another.`)
+      throw new ApolloError(`This username isn't available. Please try another.`, HTTP_STATUS_CODE['Bad Request'])
     }
 
-    // Password validation
-    if (password.length < 6) throw new Error('Minimum password length should be 6 characters.')
-
-    const newUser = await new User({
+    let newUser = new User({
       fullName,
       email,
       username,
       password,
-      lastActiveAt: new Date(),
-    }).save()
+      lastActiveAt: new Date(+new Date() + serverTimezoneOffset * 60 * 1000),
+    })
 
-    return {
-      token: generateToken({ id: newUser.id, email, username, fullName }, 'access'),
+    // ? Save user to db
+    try {
+      newUser = await newUser.save()
+    } catch (error) {
+      if (error.name === 'MongoError' && error.code === 11000) {
+        throw new ApolloError('Email or username is already in use', HTTP_STATUS_CODE['Bad Request'], error)
+      }
+      throw new ApolloError(error.message, HTTP_STATUS_CODE['Bad Request'], error)
+    }
+
+    // ? Create user credentials
+    try {
+      const user = {
+        id: newUser.id,
+        email: newUser.email,
+        username: newUser.username,
+        fullName: newUser.fullName,
+      }
+
+      const accessToken = generateToken(user, 'access')
+      const refreshToken = generateToken(user, 'refresh')
+
+      const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV === 'production' }
+
+      req.res.cookie('accessToken', accessToken, { maxAge: accessTokenMaxAge, ...cookieOptions })
+      req.res.cookie('refreshToken', refreshToken, { maxAge: refreshTokenMaxAge, ...cookieOptions })
+
+      return true
+    } catch (error) {
+      await User.deleteOne({ _id: newUser._id })
+
+      throw new ApolloError(ERROR_MESSAGE['Internal Server Error'], HTTP_STATUS_CODE['Internal Server Error'], error)
     }
   },
 
-  signin: async (root, { input: { emailOrUsername, password } }, { User }: IContext) => {
+  // * Sign in
+  signin: async (
+    root,
+    { input: { emailOrUsername, password } },
+    { User, HTTP_STATUS_CODE, ERROR_MESSAGE, req }: IContext
+  ) => {
+    // ? Throw error if express middleware failed to initialize response
+    if (!req.res) {
+      throw new ApolloError(ERROR_MESSAGE['Internal Server Error'], HTTP_STATUS_CODE['Internal Server Error'])
+    }
+
     const userFound = await User.findOne({
       $or: [{ email: emailOrUsername }, { username: emailOrUsername }],
     })
-    if (!userFound) throw new Error(`Username or email hasn't been registered`)
+    // ? User not found
+    if (!userFound) {
+      throw new ApolloError(`Username or password is incorrect`, HTTP_STATUS_CODE['Bad Request'])
+    }
 
     const isValidPassword = await compare(password, userFound.password)
-    if (!isValidPassword) throw new Error('Wrong password.')
+    // ? User found but the password was incorrect
+    if (!isValidPassword) {
+      throw new ApolloError(`Username or password is incorrect`, HTTP_STATUS_CODE['Bad Request'])
+    }
 
-    return {
-      token: generateToken(
-        {
-          id: userFound.id,
-          email: userFound.email,
-          username: userFound.username,
-          fullName: userFound.fullName,
-        },
-        'access'
-      ),
+    // ? Create user credentials
+    try {
+      const user = {
+        id: userFound.id,
+        email: userFound.email,
+        username: userFound.username,
+        fullName: userFound.fullName,
+      }
+
+      const accessToken = generateToken(user, 'access')
+      const refreshToken = generateToken(user, 'refresh')
+
+      const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV === 'production' }
+
+      req.res.cookie('accessToken', accessToken, { maxAge: accessTokenMaxAge, ...cookieOptions })
+      req.res.cookie('refreshToken', refreshToken, { maxAge: refreshTokenMaxAge, ...cookieOptions })
+
+      return true
+    } catch (error) {
+      throw new ApolloError(ERROR_MESSAGE['Internal Server Error'], HTTP_STATUS_CODE['Internal Server Error'], error)
     }
   },
 
   requestPasswordReset: async (root, { input: { email } }, { User }: IContext) => {
-    // Check if user exists
     const userFound = await User.findOne({ email })
     if (!userFound) throw new Error(`No such user found for email ${email}.`)
 
@@ -182,7 +220,7 @@ const Mutation = {
       { id: userFound.id, email, username: userFound.username, fullName: userFound.fullName },
       'access'
     )
-    const passwordResetTokenExpiry = Date.now() + resetPasswordTokenExpiresIn
+    const passwordResetTokenExpiry = Date.now() + resetPasswordTokenMaxAge
     await User.findOneAndUpdate({ _id: userFound.id }, { passwordResetToken, passwordResetTokenExpiry })
 
     // Email user reset link
@@ -211,7 +249,7 @@ const Mutation = {
         { passwordResetToken: token },
         {
           passwordResetTokenExpiry: {
-            $gte: Date.now() - resetPasswordTokenExpiresIn,
+            $gte: Date.now() - resetPasswordTokenMaxAge,
           },
         },
       ],
@@ -236,12 +274,7 @@ const Mutation = {
   updateUserInfo: combineResolvers(
     isAuthenticated,
     async (root, { input: { fullName } }, { authUser, User }: IContext) => {
-      // FullName validation
-      if (fullName.length < 4 || fullName.length > 40) {
-        throw new Error(`Full name length should be between 4-40 characters.`)
-      }
-
-      return await User.findByIdAndUpdate(authUser.id, { $set: { fullName } }, { new: true })
+      return await User.findByIdAndUpdate(authUser.id, { $set: { fullName } }, { new: true, runValidators: true })
     }
   ),
 
