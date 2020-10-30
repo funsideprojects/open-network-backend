@@ -102,10 +102,10 @@ type UpdateUserPhotoResponse {
 # ---------------------------------------------------------
 
 type Query {
-  # Get the currently logged in user
+  # Get the current logged in user
   getAuthUser:                                                  UserPayload
 
-  # Get user by username or by id
+  # Get user by username or id
   getUser(username: String, id: ID):                            UserPayload
 
   # Get all users except followed users and authUser
@@ -115,7 +115,7 @@ type Query {
   searchUsers(searchQuery: String!, skip: Int!, limit: Int!):  [UserPayload]
 
   # Get Suggestted people for authUser
-  suggestPeople:                                               [UserPayload]
+  suggestUsers:                                                [UserPayload]
 
   # Verify reset password token
   verifyResetPasswordToken(email: String, token: String!):      Boolean
@@ -126,19 +126,14 @@ type Query {
 # ---------------------------------------------------------
 
 type Mutation {
-  # Sign in user
   signin(input: SignInInput!):                                  Boolean
 
-  # Sign up user
   signup(input: SignUpInput!):                                  Boolean
 
-  # Request reset password
   requestPasswordReset(input: RequestPasswordResetInput!):      String
 
-  # Reset user password
   resetPassword(input: ResetPasswordInput!):                    Boolean
 
-  # Update user info
   updateUserInfo(input: UpdateUserInfoInput!):                  UserPayload
 
   # Upload user Profile or Cover photo

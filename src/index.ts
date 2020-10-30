@@ -5,7 +5,6 @@ import { createServer } from 'http'
 import * as cookieParser from 'cookie-parser'
 // import * as cluster from 'cluster'
 // import { cpus } from 'os'
-import * as ora from 'ora'
 
 import models from 'models'
 import { Logger, NetWorkManager } from 'services'
@@ -30,11 +29,6 @@ async function main() {
 
   // * Initialize application
   const app = express()
-
-  const spinner = ora({ spinner: 'dots', prefixText: Logger.prefixes })
-  const prefix = `[Express]`
-
-  spinner.start(`${prefix} Initializing`)
 
   // ? Static
   if (process.env.NODE_ENV === 'development') {
@@ -78,8 +72,8 @@ async function main() {
   // ? Listen to HTTP and WebSocket server
   const { PORT, NODE_ENV } = process.env
   httpServer.listen({ port: PORT }, () => {
-    spinner.succeed(
-      `${prefix} Server ready at ${
+    Logger.info(
+      `[Express] Server ready at ${
         NODE_ENV === 'development' ? hl.success(`http://${NetWorkManager.ip}:${PORT!}`) : `port ${PORT}`
       }`
     )

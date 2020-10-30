@@ -1,37 +1,45 @@
 import * as mongoose from 'mongoose'
-import * as ora from 'ora'
 
 import { Logger } from 'services'
 import { hl } from 'utils'
+
+export enum ConnectionStates {
+  disconnected = 0,
+  connected = 1,
+  connecting = 2,
+  disconnecting = 3,
+  uninitialized = 99,
+}
+
+export const { connection: mongooseConnection } = mongoose
 
 export async function mongooseConnect() {
   const { MONGO_URL } = process.env
 
   if (!MONGO_URL) throw new Error('[Mongoose] Missing MONGO_URL')
 
-  const spinner = ora({ spinner: 'dots', prefixText: Logger.prefixes })
-  const prefix = `[Service] [Mongoose]`
+  const prefix = `[Mongoose]`
   const affix = `(URL: ${hl.success(MONGO_URL)})`
 
   // ? Mongoose events
-  mongoose.connection.once('connecting', () => {
-    spinner.start(`${prefix} Connecting ${affix}`)
-  })
+  // mongoose.connection.once('connecting', () => {
+  //   Logger.info(`${prefix} Connecting ${affix}`)
+  // })
 
   mongoose.connection.once('connected', () => {
-    spinner.succeed(`${prefix} Connected ${affix}`)
+    Logger.info(`${prefix} Connected ${affix}`)
   })
 
   mongoose.connection.on('reconnected', () => {
-    spinner.succeed(`${prefix} ${hl.success('Reconnected')}`)
+    Logger.info(`${prefix} ${hl.success('Reconnected')}`)
   })
 
   mongoose.connection.on('disconnected', () => {
-    spinner.start(`${prefix} ${hl.warn('Disconnected. Attempting to reconnect')}`)
+    Logger.info(`${prefix} ${hl.warn('Disconnected. Attempting to reconnect')}`)
   })
 
   mongoose.connection.once('error', (err) => {
-    spinner.fail(`${prefix} ${err.message}`)
+    Logger.error(`${prefix} ${err.message}`)
     process.exit(0)
   })
 

@@ -28,7 +28,7 @@ class UploadManager {
   private videoUploadDir = process.env.VIDEOS_UPLOAD_DIR ?? './uploads/videos'
   private audioUploadDir = process.env.AUDIOS_UPLOAD_DIR ?? './uploads/audios'
 
-  private acceptableTypes(accept: Array<IFileType>) {
+  protected acceptableTypes(accept: Array<IFileType>) {
     return [
       ...(accept.indexOf('image') > -1 ? imageTypes : []),
       ...(accept.indexOf('video') > -1 ? videoTypes : []),
@@ -40,54 +40,52 @@ class UploadManager {
     username: string,
     file: Promise<FileUpload>,
     accept: Array<IFileType> = ['image', 'video', 'audio']
-  ): Promise<IUploadedFile | undefined> {
+  ): Promise<IUploadedFile> {
     const { filename, mimetype, encoding, createReadStream } = await file
 
-    if (this.acceptableTypes(accept).indexOf(mimetype as any) < 0) {
-      Logger.error(`[UploadManager] [${filename}] File type was not supported!`)
-
-      return undefined
-    }
-
-    const fileType = mimetype.split('/')[0] as IFileType
-    const uploadDir = this[`${fileType}UploadDir`]
-    const stream = createReadStream()
-    const filePublicId = v4()
-
-    // * Ensure upload path
-    mkdirSync(`${uploadDir}/${username}`)
-
-    const fileAddress = `${username}/${filePublicId}${extname(filename)}`
-    const path = `${uploadDir}/${fileAddress}`
-
-    // * Store the file in the filesystem.
     return new Promise((resolve, reject) => {
-      const writeStream = createWriteStream(path)
-      writeStream.on('finish', resolve)
-      writeStream.on('error', reject)
+      if (this.acceptableTypes(accept).indexOf(mimetype as string) < 0) {
+        Logger.error(`[UploadManager] [${filename}] File type was not supported`)
 
-      stream.on('error', writeStream.destroy)
-      stream.pipe(writeStream)
-    })
-      .then(() => {
+        reject(new Error('File type was not supported'))
+      }
+
+      const fileType = mimetype.split('/')[0] as IFileType
+      const uploadDir = this[`${fileType}UploadDir`]
+      const stream = createReadStream()
+      const filePublicId = v4()
+
+      // * Ensure upload path
+      mkdirSync(`${uploadDir}/${username}`)
+
+      const fileAddress = `${username}/${filePublicId}${extname(filename)}`
+      const path = `${uploadDir}/${fileAddress}`
+
+      // * Store the file in the filesystem.
+      const writeStream = createWriteStream(path)
+      writeStream.on('finish', () => {
         Logger.debug(`[UploadManager] ${hl.success('[UploadFile]')}`, `[${fileType}][${fileAddress}]`)
 
-        return {
+        resolve({
           filename,
           mimetype,
           encoding,
           fileAddress,
           filePublicId,
-          fileSize: statSync(path).size, // Size as bytes
+          fileSize: statSync(path).size, // ? Size as bytes
           path,
-        }
+        })
       })
-      .catch((error) => {
-        unlinkSync(path)
-        Logger.error(`[UploadManager] ${hl.error('[UploadFile]')}`, error)
 
-        return undefined
+      writeStream.on('error', (error) => {
+        Logger.debug(`[UploadManager] ${hl.error('[UploadFile]')}`, error.message)
+        unlinkSync(path)
+        reject(error)
       })
+
+      stream.on('error', writeStream.destroy)
+      stream.pipe(writeStream)
+    })
   }
 
   public removeUploadedFile(fileType: IFileType, fileAddress: string) {

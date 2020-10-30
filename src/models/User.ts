@@ -10,7 +10,7 @@ export interface IUser extends Document {
   username: string
   password: string
   passwordResetToken?: string
-  passwordResetTokenExpiry?: number
+  passwordResetTokenExpiry?: Date
   image?: string
   imagePublicId?: string
   coverImage?: string
@@ -67,7 +67,7 @@ const userSchema = new Schema(
       required: [true, 'Password is required'],
     },
     passwordResetToken: String,
-    passwordResetTokenExpiry: Number,
+    passwordResetTokenExpiry: Date,
     image: String,
     imagePublicId: String,
     coverImage: String,
@@ -84,7 +84,7 @@ const userSchema = new Schema(
   },
   {
     timestamps: {
-      currentTime: () => +new Date() + serverTimezoneOffset * 60 * 1000,
+      currentTime: () => +new Date() + serverTimezoneOffset,
     },
   }
 )

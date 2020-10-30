@@ -15,7 +15,7 @@ class Cloudinary {
         api_secret: process.env.CLOUDINARY_SECRET,
       })
 
-      Logger.info(`[Service] [Cloudinary] Initialized successfully`)
+      Logger.info(`[Cloudinary] Initialized successfully`)
     }
   }
 

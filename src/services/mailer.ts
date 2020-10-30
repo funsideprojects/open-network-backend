@@ -17,11 +17,11 @@ class Mailer {
 
       this.transporter = transporter
 
-      Logger.info('[Service] [Mailer] Initialized successfully')
+      Logger.info('[Mailer] Initialized successfully')
     }
   }
 
-  public async sendEmail({ from = this.authUser, ...rest }: SendMailOptions) {
+  public async sendMail({ from = this.authUser, ...rest }: SendMailOptions) {
     return new Promise((resolve, reject) => {
       if (!this.transporter) reject('Mailer was not initialized')
       else {

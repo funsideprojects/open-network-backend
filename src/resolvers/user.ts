@@ -6,7 +6,7 @@ import { combineResolvers } from 'graphql-resolvers'
 import { serverTimezoneOffset } from 'constants/Date'
 import { IS_USER_ONLINE } from 'constants/Subscriptions'
 import { frontEndPages } from 'constants/UsernameBlacklist'
-import { Logger, Mailer, UploadManager } from 'services'
+import { Mailer, UploadManager } from 'services'
 
 import { pubSub, IContext } from '_apollo-server'
 import { generateToken, accessTokenMaxAge, refreshTokenMaxAge, resetPasswordTokenMaxAge } from '_jsonwebtoken'
@@ -15,22 +15,37 @@ import { getRequestedFieldsFromInfo } from './functions'
 import { isAuthenticated } from './high-order-resolvers'
 
 const Query = {
-  getAuthUser: combineResolvers(isAuthenticated, async (root, args, { authUser, User }: IContext) => {
-    return await User.findById(authUser.id)
+  getAuthUser: combineResolvers(isAuthenticated, async (root, args, { authUser, User, HTTP_STATUS_CODE }: IContext) => {
+    const userFound = await User.findById(authUser.id)
+
+    if (!userFound) {
+      throw new ApolloError('Unauthorized', HTTP_STATUS_CODE.Unauthorized)
+    }
+
+    return userFound
   }),
 
-  getUser: async (root, { username, id }, { User, ERROR_TYPES }: IContext) => {
-    if ((!username && !id) || (username && id)) throw new Error(ERROR_TYPES.INVALID_INPUT)
+  getUser: async (root, { username, id }, { User, HTTP_STATUS_CODE }: IContext) => {
+    if ((!username && !id) || (username && id)) {
+      throw new ApolloError('Invalid arguments', HTTP_STATUS_CODE['Bad Request'])
+    }
 
     const userFound = await User.findOne({ ...(username ? { username } : { _id: id }) })
-    if (!userFound) throw new Error(`user_${ERROR_TYPES.NOT_FOUND}`)
+    if (!userFound) {
+      throw new ApolloError('User could not be found', HTTP_STATUS_CODE['Not Found'])
+    }
 
     return userFound
   },
 
   getUsers: combineResolvers(
     isAuthenticated,
-    async (root, { skip, limit }, { authUser, User, Follow }: IContext, info: GraphQLResolveInfo) => {
+    async (root, { skip, limit }, { authUser, User, Follow, HTTP_STATUS_CODE }: IContext, info: GraphQLResolveInfo) => {
+      // ! Limit the result for safety purpose
+      if (limit - skip >= 25) {
+        throw new ApolloError('', HTTP_STATUS_CODE['Method Not Allowed'])
+      }
+
       const result = {}
       const requestedFields = getRequestedFieldsFromInfo(info)
 
@@ -58,24 +73,28 @@ const Query = {
 
   searchUsers: combineResolvers(
     isAuthenticated,
-    async (root, { searchQuery, skip, limit }, { authUser: { id }, User }: IContext) => {
+    async (root, { searchQuery, skip, limit }, { authUser, User, HTTP_STATUS_CODE }: IContext) => {
+      if (limit - skip >= 25) {
+        throw new ApolloError('', HTTP_STATUS_CODE['Method Not Allowed'])
+      }
+
       return await User.find({
         $or: [{ username: new RegExp(searchQuery, 'i') }, { fullName: new RegExp(searchQuery, 'i') }],
-        _id: { $ne: id },
+        _id: { $ne: authUser.id },
       })
         .skip(skip)
         .limit(limit)
     }
   ),
 
-  suggestPeople: combineResolvers(isAuthenticated, async (root, args, { authUser: { id }, User, Follow }: IContext) => {
+  suggestUsers: combineResolvers(isAuthenticated, async (root, args, { authUser, User, Follow }: IContext) => {
     const SUGGESTION_LIMIT = 5
 
     // ? Find users who authUser is following
-    const currentFollowing = await Follow.find({ '_id.followerId': id })
+    const currentFollowing = await Follow.find({ '_id.followerId': authUser.id })
 
     // ? Find random users except users that authUser is following
-    const query = { _id: { $nin: [...currentFollowing.map(({ _id }) => _id.userId), id] } }
+    const query = { _id: { $nin: [...currentFollowing.map(({ _id }) => _id.userId), authUser.id] } }
     const usersCount = await User.countDocuments(query)
     let random = ~~(Math.random() * usersCount)
 
@@ -96,7 +115,7 @@ const Query = {
       email,
       passwordResetToken: token,
       passwordResetTokenExpiry: {
-        $gte: Date.now() - resetPasswordTokenMaxAge,
+        $gte: new Date(Date.now() - resetPasswordTokenMaxAge),
       },
     })
 
@@ -105,7 +124,7 @@ const Query = {
 }
 
 const Mutation = {
-  // * Sign up
+  // *
   signup: async (
     root,
     { input: { fullName, email, username, password } },
@@ -125,7 +144,7 @@ const Mutation = {
       email,
       username,
       password,
-      lastActiveAt: new Date(+new Date() + serverTimezoneOffset * 60 * 1000),
+      lastActiveAt: new Date(Date.now() + serverTimezoneOffset),
     })
 
     // ? Save user to db
@@ -163,7 +182,7 @@ const Mutation = {
     }
   },
 
-  // * Sign in
+  // *
   signin: async (
     root,
     { input: { emailOrUsername, password } },
@@ -211,64 +230,63 @@ const Mutation = {
     }
   },
 
-  requestPasswordReset: async (root, { input: { email } }, { User }: IContext) => {
+  requestPasswordReset: async (root, { input: { email } }, { User, HTTP_STATUS_CODE }: IContext) => {
     const userFound = await User.findOne({ email })
-    if (!userFound) throw new Error(`No such user found for email ${email}.`)
+    if (!userFound) {
+      throw new ApolloError(`No such user found for email ${email}.`, HTTP_STATUS_CODE['Bad Request'])
+    }
 
-    // Set password reset token and it's expiry
-    const passwordResetToken = generateToken(
-      { id: userFound.id, email, username: userFound.username, fullName: userFound.fullName },
-      'access'
-    )
-    const passwordResetTokenExpiry = Date.now() + resetPasswordTokenMaxAge
+    const user = {
+      id: userFound.id,
+      email: userFound.email,
+      username: userFound.username,
+      fullName: userFound.fullName,
+    }
+
+    // ? Set password reset token and it's expiry
+    const passwordResetToken = generateToken(user, 'resetPassword')
+    const passwordResetTokenExpiry = new Date(Date.now() + serverTimezoneOffset + resetPasswordTokenMaxAge)
+
     await User.findOneAndUpdate({ _id: userFound.id }, { passwordResetToken, passwordResetTokenExpiry })
 
-    // Email user reset link
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password?email=${email}&token=${passwordResetToken}`
+    // ? Send an email contain reset link
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?&t=${passwordResetToken}`
+    // todo Enhance html reset password template
     const mailOptions = {
       to: email,
       subject: 'Password Reset',
       html: resetLink,
     }
 
-    await Mailer.sendEmail(mailOptions)
+    await Mailer.sendMail(mailOptions)
 
-    // Return success message
-    return email
+    return true
   },
 
-  resetPassword: async (root, { input: { email, token, password } }, { User }: IContext) => {
-    if (!password) throw new Error('Please enter password and Confirm password.')
-
-    if (password.length < 6) throw new Error('Minimum password length should be 6 characters.')
-
-    // Check if user exists and token is valid
+  resetPassword: async (root, { input: { email, token, password } }, { User, HTTP_STATUS_CODE }: IContext) => {
+    // ? Validate token
     const userFound = await User.findOne({
       $and: [
         { email },
         { passwordResetToken: token },
         {
           passwordResetTokenExpiry: {
-            $gte: Date.now() - resetPasswordTokenMaxAge,
+            $gte: new Date(Date.now() - resetPasswordTokenMaxAge),
           },
         },
       ],
     })
-    if (!userFound) throw new Error('This token is either invalid or expired!.')
+    if (!userFound) {
+      throw new ApolloError('This token is either invalid or expired', HTTP_STATUS_CODE['Bad Request'])
+    }
 
-    // Update password, reset token and it's expiry
+    // ? Update password, reset token and it's expiry
     userFound.passwordResetToken = undefined
     userFound.passwordResetTokenExpiry = undefined
     userFound.password = password
     await userFound.save()
 
-    // Return success message
-    return {
-      token: generateToken(
-        { id: userFound.id, email, username: userFound.username, fullName: userFound.fullName },
-        'access'
-      ),
-    }
+    return true
   },
 
   updateUserInfo: combineResolvers(
@@ -280,17 +298,16 @@ const Mutation = {
 
   updateUserPhoto: combineResolvers(
     isAuthenticated,
-    async (root, { input: { image, isCover } }, { authUser, User, ERROR_TYPES }: IContext) => {
-      if (typeof isCover !== 'boolean') throw new Error(ERROR_TYPES.INVALID_INPUT)
+    async (root, { input: { image, isCover } }, { authUser, User, HTTP_STATUS_CODE }: IContext) => {
+      let fieldsToUpdate: { [key: string]: string | undefined }
 
-      let fieldsToUpdate
+      const userFound = await User.findById(authUser.id)
+      if (!userFound) {
+        throw new ApolloError('Unauthorized', HTTP_STATUS_CODE.Unauthorized)
+      }
 
       if (image) {
-        const userFound = await User.findById(authUser.id)
-        if (!userFound) throw new Error(`user_${ERROR_TYPES.NOT_FOUND}`)
-
         const uploadedFile = await UploadManager.uploadFile(authUser.username, image, ['image'])
-        if (!uploadedFile) throw new Error(ERROR_TYPES.UNKNOWN)
 
         fieldsToUpdate = {
           [isCover ? 'coverImage' : 'image']: uploadedFile.fileAddress,
@@ -300,23 +317,20 @@ const Mutation = {
         if (userFound[isCover ? 'coverImage' : 'image']) {
           UploadManager.removeUploadedFile('image', userFound[isCover ? 'coverImage' : 'image']!)
         }
-
-        // Record the file metadata in the DB.
-        await User.findByIdAndUpdate(authUser.id, { $set: fieldsToUpdate })
       } else {
         fieldsToUpdate = {
           [isCover ? 'coverImage' : 'image']: undefined,
           [isCover ? 'coverImagePublicId' : 'imagePublicId']: undefined,
         }
 
-        const userFound = await User.findByIdAndUpdate(authUser.id, { $set: fieldsToUpdate })
-
         if (userFound && userFound[isCover ? 'coverImage' : 'image']) {
           UploadManager.removeUploadedFile('image', userFound[isCover ? 'coverImage' : 'image']!)
         }
       }
 
-      return fieldsToUpdate
+      const updatedUser = await User.findByIdAndUpdate(authUser.id, { $set: fieldsToUpdate }, { new: true })
+
+      return updatedUser
     }
   ),
 }

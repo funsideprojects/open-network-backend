@@ -5,7 +5,6 @@ import * as depthLimit from 'graphql-depth-limit'
 import { ApolloServer } from 'apollo-server-express'
 import { fileLoader, mergeTypes } from 'merge-graphql-schemas'
 import 'apollo-cache-control'
-import * as ora from 'ora'
 
 import { ERROR_TYPES, HTTP_STATUS_CODE, ERROR_MESSAGE } from 'constants/Errors'
 import { IS_USER_ONLINE } from 'constants/Subscriptions'
@@ -15,6 +14,7 @@ import resolvers from 'resolvers'
 import { Logger, ConnectionManager } from 'services'
 import { hl } from 'utils'
 
+import { mongooseConnection, ConnectionStates } from '_mongoose'
 import { IDecodedToken, verifyToken } from '_jsonwebtoken'
 
 // ? Interface
@@ -39,11 +39,6 @@ export const pubSub = new PubSub()
 const typeDefs = mergeTypes(fileLoader(join(__dirname, `/schema/**/*.gql`)), { all: true })
 
 export function createApolloServer(graphqlPath: string) {
-  const spinner = ora({ spinner: 'dots', prefixText: Logger.prefixes })
-  const prefix = `[Apollo Server]`
-
-  spinner.start(`${prefix} Starting`)
-
   return new ApolloServer({
     uploads: {
       maxFileSize: 5 * 1000 * 1000, // ? 5 MB
@@ -63,13 +58,7 @@ export function createApolloServer(graphqlPath: string) {
     plugins: [
       {
         serverWillStart(e) {
-          spinner.succeed(`${prefix} Ready at ${hl.success(graphqlPath)}`)
-
-          return {
-            serverWillStop() {
-              Logger.info('[Apollo Server] Shutting down')
-            },
-          }
+          Logger.info(`[Apollo Server] Ready at ${hl.success(graphqlPath)}`)
         },
         // requestDidStart() {
         // return {
@@ -85,18 +74,31 @@ export function createApolloServer(graphqlPath: string) {
     formatError: (error) => {
       const errorCode = error.extensions?.code
 
-      console.log(error)
+      Logger.debug(
+        `[Apollo Server]\r\n`,
+        `[${error.path}]: {\r\n`,
+        ` Code: ${errorCode || 'unknown'},\r\n `,
+        hl.error(error.extensions?.exception?.stacktrace.join('\r\n'))
+      )
 
-      // Logger.error(
-      //   `[Apollo Server]\r\n`,
-      //   `[${error.path}]: {\r\n`,
-      //   ` Code: ${errorCode || 'unknown'},\r\n `,
-      //   hl.error(error.extensions?.exception?.stacktrace.join('\r\n'))
-      // )
+      if (errorCode === 'INTERNAL_SERVER_ERROR') {
+        if (mongooseConnection.readyState === ConnectionStates.disconnected) {
+          // ? Error occurred due to lost connection to database
+          return {
+            code: HTTP_STATUS_CODE['Service Unavailable'],
+            message: ERROR_MESSAGE['Service Unavailable'],
+          }
+        }
+
+        return {
+          code: HTTP_STATUS_CODE['Internal Server Error'],
+          message: ERROR_MESSAGE['Internal Server Error'],
+        }
+      }
 
       // ! Don't give the specific errors to the client.
       return {
-        code: errorCode === 'INTERNAL_SERVER_ERROR' ? HTTP_STATUS_CODE['Internal Server Error'] : errorCode,
+        code: errorCode,
         message: error.message,
       }
     },
