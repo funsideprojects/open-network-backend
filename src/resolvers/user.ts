@@ -17,6 +17,7 @@ import { isAuthenticated } from './high-order-resolvers'
 const Query = {
   getAuthUser: combineResolvers(isAuthenticated, async (root, args, { authUser, User, HTTP_STATUS_CODE }: IContext) => {
     const userFound = await User.findById(authUser.id)
+    console.log('userFound', userFound)
 
     if (!userFound) {
       throw new ApolloError('Unauthorized', HTTP_STATUS_CODE.Unauthorized)

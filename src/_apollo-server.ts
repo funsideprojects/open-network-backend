@@ -74,31 +74,31 @@ export function createApolloServer(graphqlPath: string) {
     formatError: (error) => {
       const errorCode = error.extensions?.code
 
-      Logger.debug(
-        `[Apollo Server]\r\n`,
-        `[${error.path}]: {\r\n`,
-        ` Code: ${errorCode || 'unknown'},\r\n `,
-        hl.error(error.extensions?.exception?.stacktrace.join('\r\n'))
-      )
+      // Logger.debug(
+      //   `[Apollo Server]\r\n`,
+      //   `[${error.path}]: {\r\n`,
+      //   ` Code: ${errorCode || 'unknown'},\r\n `,
+      //   hl.error(error.extensions?.exception?.stacktrace.join('\r\n'))
+      // )
 
       if (errorCode === 'INTERNAL_SERVER_ERROR') {
         if (mongooseConnection.readyState === ConnectionStates.disconnected) {
           // ? Error occurred due to lost connection to database
           return {
-            code: HTTP_STATUS_CODE['Service Unavailable'],
+            extensions: { code: HTTP_STATUS_CODE['Service Unavailable'] },
             message: ERROR_MESSAGE['Service Unavailable'],
           }
         }
 
         return {
-          code: HTTP_STATUS_CODE['Internal Server Error'],
-          message: ERROR_MESSAGE['Internal Server Error'],
+          extensions: { code: HTTP_STATUS_CODE['Internal Server Error'] },
+          message: process.env.NODE_ENV === 'development' ? error.message : ERROR_MESSAGE['Internal Server Error'],
         }
       }
 
       // ! Don't give the specific errors to the client.
       return {
-        code: errorCode,
+        extensions: { code: errorCode },
         message: error.message,
       }
     },
