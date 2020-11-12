@@ -169,7 +169,6 @@ const Mutation = {
 
       const accessToken = generateToken(user, 'access')
       const refreshToken = generateToken(user, 'refresh')
-
       const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV === 'production' }
 
       req.res.cookie('accessToken', accessToken, { maxAge: accessTokenMaxAge, ...cookieOptions })

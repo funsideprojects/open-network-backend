@@ -25,6 +25,6 @@ export enum ERROR_MESSAGE {
   // ? Client errors
   // 'Bad Request' = '',
   // ? Server errors
-  'Internal Server Error' = 'An unexpected error has occurred',
+  'Internal Server Error' = 'An unexpected error has occurred. Please try again later',
   'Service Unavailable' = 'Service Unavailable',
 }
