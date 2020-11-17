@@ -5,7 +5,6 @@ import { combineResolvers } from 'graphql-resolvers'
 
 import { serverTimezoneOffset } from 'constants/Date'
 import { IS_USER_ONLINE } from 'constants/Subscriptions'
-import { frontEndPages } from 'constants/UsernameBlacklist'
 import { Mailer, UploadManager } from 'services'
 
 import { pubSub, IContext } from '_apollo-server'
@@ -17,7 +16,6 @@ import { isAuthenticated } from './high-order-resolvers'
 const Query = {
   getAuthUser: combineResolvers(isAuthenticated, async (root, args, { authUser, User, HTTP_STATUS_CODE }: IContext) => {
     const userFound = await User.findById(authUser.id)
-    console.log('userFound', userFound)
 
     if (!userFound) {
       throw new ApolloError('Unauthorized', HTTP_STATUS_CODE.Unauthorized)
@@ -128,16 +126,12 @@ const Mutation = {
   // *
   signup: async (
     root,
-    { input: { fullName, email, username, password } },
+    { input: { fullName, email, username, password, autoSignIn } },
     { User, HTTP_STATUS_CODE, ERROR_MESSAGE, req }: IContext
   ) => {
     // ? Throw error if express middleware failed to initialize response
     if (!req.res) {
       throw new ApolloError(ERROR_MESSAGE['Internal Server Error'], HTTP_STATUS_CODE['Internal Server Error'])
-    }
-
-    if (frontEndPages.includes(username)) {
-      throw new ApolloError(`This username isn't available. Please try another.`, HTTP_STATUS_CODE['Bad Request'])
     }
 
     let newUser = new User({
@@ -153,32 +147,42 @@ const Mutation = {
       newUser = await newUser.save()
     } catch (error) {
       if (error.name === 'MongoError' && error.code === 11000) {
-        throw new ApolloError('Email or username is already in use', HTTP_STATUS_CODE['Bad Request'], error)
+        throw new ApolloError(
+          error.keyPattern.username
+            ? 'This username has been taken already'
+            : 'This email is already connected to an account',
+          HTTP_STATUS_CODE['Bad Request'],
+          error
+        )
       }
       throw new ApolloError(error.message, HTTP_STATUS_CODE['Bad Request'], error)
     }
 
-    // ? Create user credentials
-    try {
-      const user = {
-        id: newUser.id,
-        email: newUser.email,
-        username: newUser.username,
-        fullName: newUser.fullName,
+    if (autoSignIn) {
+      // ? Create user credentials
+      try {
+        const user = {
+          id: newUser.id,
+          email: newUser.email,
+          username: newUser.username,
+          fullName: newUser.fullName,
+        }
+
+        const accessToken = generateToken(user, 'access')
+        const refreshToken = generateToken(user, 'refresh')
+        const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV === 'production' }
+
+        req.res.cookie('accessToken', accessToken, { maxAge: accessTokenMaxAge, ...cookieOptions })
+        req.res.cookie('refreshToken', refreshToken, { maxAge: refreshTokenMaxAge, ...cookieOptions })
+
+        return true
+      } catch (error) {
+        await User.deleteOne({ _id: newUser._id })
+
+        throw new ApolloError(ERROR_MESSAGE['Internal Server Error'], HTTP_STATUS_CODE['Internal Server Error'], error)
       }
-
-      const accessToken = generateToken(user, 'access')
-      const refreshToken = generateToken(user, 'refresh')
-      const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV === 'production' }
-
-      req.res.cookie('accessToken', accessToken, { maxAge: accessTokenMaxAge, ...cookieOptions })
-      req.res.cookie('refreshToken', refreshToken, { maxAge: refreshTokenMaxAge, ...cookieOptions })
-
+    } else {
       return true
-    } catch (error) {
-      await User.deleteOne({ _id: newUser._id })
-
-      throw new ApolloError(ERROR_MESSAGE['Internal Server Error'], HTTP_STATUS_CODE['Internal Server Error'], error)
     }
   },
 

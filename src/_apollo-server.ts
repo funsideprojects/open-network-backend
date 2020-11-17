@@ -83,7 +83,7 @@ export function createApolloServer(graphqlPath: string) {
 
       if (errorCode === 'INTERNAL_SERVER_ERROR') {
         if (mongooseConnection.readyState === ConnectionStates.disconnected) {
-          // ? Error occurred due to lost connection to database
+          // ? Error occurred due to database connection lost
           return {
             extensions: { code: HTTP_STATUS_CODE['Service Unavailable'] },
             message: ERROR_MESSAGE['Service Unavailable'],

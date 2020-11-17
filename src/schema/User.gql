@@ -35,6 +35,7 @@ input SignUpInput {
   username:                   String!
   fullName:                   String!
   password:                   String!
+  autoSignIn:                 Boolean!
 }
 
 input RequestPasswordResetInput {
