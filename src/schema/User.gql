@@ -6,6 +6,7 @@ type User {
   id:                         ID!
   fullName:                   String!
   email:                      String!
+  emailVerified:              Boolean!
   username:                   String!
   password:                   String!
   passwordResetToken:         String
@@ -14,7 +15,6 @@ type User {
   imagePublicId:              String
   coverImage:                 String
   coverImagePublicId:         String
-  emailVerified:              Boolean!
   online:                     Boolean!
   lastActiveAt:               String!
 
@@ -46,7 +46,6 @@ input RequestPasswordResetInput {
 
 input ResetPasswordInput {
   token:                      String!
-  email:                      String!
   password:                   String!
 }
 
@@ -72,6 +71,7 @@ type UserPayload {
   id:                         ID
   fullName:                   String
   email:                      String
+  emailVerified:              Boolean
   username:                   String
   image:                      String
   imagePublicId:              String

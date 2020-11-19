@@ -277,11 +277,10 @@ const Mutation = {
     return true
   },
 
-  resetPassword: async (root, { input: { token, email, password } }, { User, HTTP_STATUS_CODE }: IContext) => {
+  resetPassword: async (root, { input: { token, password } }, { User, HTTP_STATUS_CODE }: IContext) => {
     // ? Validate token
     const userFound = await User.findOne({
       $and: [
-        { email },
         { passwordResetToken: token },
         {
           passwordResetTokenExpiry: {
