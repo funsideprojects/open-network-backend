@@ -14,7 +14,8 @@ type User {
   imagePublicId:              String
   coverImage:                 String
   coverImagePublicId:         String
-  isOnline:                   Boolean!
+  emailVerified:              Boolean!
+  online:                     Boolean!
   lastActiveAt:               String!
 
   createdAt:                  String!
@@ -39,12 +40,19 @@ input SignUpInput {
 }
 
 input RequestPasswordResetInput {
-  email:                      String!
+  email:                      String
+  username:                   String
 }
 
 input ResetPasswordInput {
+  token:                      String!
   email:                      String!
   password:                   String!
+}
+
+input UpdateUserPasswordInput {
+  password:                   String!
+  newPassword:                String!
 }
 
 input UpdateUserInfoInput {
@@ -69,7 +77,7 @@ type UserPayload {
   imagePublicId:              String
   coverImage:                 String
   coverImagePublicId:         String
-  isOnline:                   Boolean
+  online:                     Boolean
   lastActiveAt:               String
 
   createdAt:                  String
@@ -83,12 +91,8 @@ type UsersPayload {
 
 type IsUserOnlinePayload {
   userId:                     ID
-  isOnline:                   Boolean
+  online:                     Boolean
   lastActiveAt:               String
-}
-
-type SuccessMessage {
-  message:                    String!
 }
 
 type UpdateUserPhotoResponse {
@@ -131,9 +135,11 @@ type Mutation {
 
   signup(input: SignUpInput!):                                  Boolean
 
-  requestPasswordReset(input: RequestPasswordResetInput!):      String
+  requestPasswordReset(input: RequestPasswordResetInput!):      Boolean
 
   resetPassword(input: ResetPasswordInput!):                    Boolean
+
+  updateUserPassword(input: UpdateUserPasswordInput!):          Boolean
 
   updateUserInfo(input: UpdateUserInfoInput!):                  UserPayload
 

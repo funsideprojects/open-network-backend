@@ -1,42 +1,12 @@
-import Comment from './Comment'
-import File from './File'
-import Follow from './Follow'
-import Like from './Like'
-import Message from './Message'
-import Notification from './Notification'
-import Post from './Post'
-import Setting from './Setting'
-import Sticker from './Sticker'
-import StickerCollection from './StickerCollection'
-import User from './User'
-import UserSession from './UserSession'
-
-export interface IModels {
-  Comment: typeof Comment
-  File: typeof File
-  Follow: typeof Follow
-  Like: typeof Like
-  Message: typeof Message
-  Notification: typeof Notification
-  Post: typeof Post
-  Setting: typeof Setting
-  Sticker: typeof Sticker
-  StickerCollection: typeof StickerCollection
-  User: typeof User
-  UserSession: typeof UserSession
-}
-
-export default {
-  Comment,
-  File,
-  Follow,
-  Like,
-  Message,
-  Notification,
-  Post,
-  Setting,
-  Sticker,
-  StickerCollection,
-  User,
-  UserSession,
-}
+export { default as Comment } from './Comment'
+export { default as File } from './File'
+export { default as Follow } from './Follow'
+export { default as Like } from './Like'
+export { default as Message } from './Message'
+export { default as Notification } from './Notification'
+export { default as Post } from './Post'
+export { default as Setting } from './Setting'
+export { default as Sticker } from './Sticker'
+export { default as StickerCollection } from './StickerCollection'
+export { default as User } from './User'
+export { default as UserSession } from './UserSession'

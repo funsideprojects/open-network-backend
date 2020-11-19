@@ -114,7 +114,7 @@ const Query = {
       email,
       passwordResetToken: token,
       passwordResetTokenExpiry: {
-        $gte: new Date(Date.now() - resetPasswordTokenMaxAge),
+        $gte: new Date(Date.now() + serverTimezoneOffset - resetPasswordTokenMaxAge),
       },
     })
 
@@ -123,7 +123,6 @@ const Query = {
 }
 
 const Mutation = {
-  // *
   signup: async (
     root,
     { input: { fullName, email, username, password, autoSignIn } },
@@ -149,8 +148,8 @@ const Mutation = {
       if (error.name === 'MongoError' && error.code === 11000) {
         throw new ApolloError(
           error.keyPattern.username
-            ? 'This username has been taken already'
-            : 'This email is already connected to an account',
+            ? '__USERNAME__This username has been taken already'
+            : '__EMAIL__This email is already connected to an account',
           HTTP_STATUS_CODE['Bad Request'],
           error
         )
@@ -186,7 +185,6 @@ const Mutation = {
     }
   },
 
-  // *
   signin: async (
     root,
     { input: { emailOrUsername, password } },
@@ -205,9 +203,9 @@ const Mutation = {
       throw new ApolloError(`Username or password is incorrect`, HTTP_STATUS_CODE['Bad Request'])
     }
 
-    const isValidPassword = await compare(password, userFound.password)
+    const isPasswordValid = await compare(password, userFound.password)
     // ? User found but the password was incorrect
-    if (!isValidPassword) {
+    if (!isPasswordValid) {
       throw new ApolloError(`Username or password is incorrect`, HTTP_STATUS_CODE['Bad Request'])
     }
 
@@ -222,7 +220,6 @@ const Mutation = {
 
       const accessToken = generateToken(user, 'access')
       const refreshToken = generateToken(user, 'refresh')
-
       const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV === 'production' }
 
       req.res.cookie('accessToken', accessToken, { maxAge: accessTokenMaxAge, ...cookieOptions })
@@ -234,10 +231,24 @@ const Mutation = {
     }
   },
 
-  requestPasswordReset: async (root, { input: { email } }, { User, HTTP_STATUS_CODE }: IContext) => {
-    const userFound = await User.findOne({ email })
+  requestPasswordReset: async (root, { input: { email, username } }, { User, HTTP_STATUS_CODE }: IContext) => {
+    if ((!email && !username) || (email && username)) {
+      throw new ApolloError('__INPUT__Invalid arguments', HTTP_STATUS_CODE['Bad Request'])
+    }
+
+    const userFound = await User.findOne({ ...(email ? { email } : { username }) })
     if (!userFound) {
-      throw new ApolloError(`No such user found for email ${email}.`, HTTP_STATUS_CODE['Bad Request'])
+      throw new ApolloError(
+        `__INPUT__No such user found for this ${email ? 'email' : 'username'}`,
+        HTTP_STATUS_CODE['Bad Request']
+      )
+    }
+
+    if (!userFound.emailVerified) {
+      throw new ApolloError(
+        '__INPUT__Email address linked to this account has not been verified. Please contact administrator to reset your password',
+        HTTP_STATUS_CODE['Bad Request']
+      )
     }
 
     const user = {
@@ -257,7 +268,7 @@ const Mutation = {
     const resetLink = `${process.env.FRONTEND_URL}/reset-password?&t=${passwordResetToken}`
     // todo Enhance html reset password template
     const mailOptions = {
-      to: email,
+      to: userFound.email,
       subject: 'Password Reset',
       html: resetLink,
     }
@@ -267,7 +278,7 @@ const Mutation = {
     return true
   },
 
-  resetPassword: async (root, { input: { email, token, password } }, { User, HTTP_STATUS_CODE }: IContext) => {
+  resetPassword: async (root, { input: { token, email, password } }, { User, HTTP_STATUS_CODE }: IContext) => {
     // ? Validate token
     const userFound = await User.findOne({
       $and: [
@@ -275,7 +286,7 @@ const Mutation = {
         { passwordResetToken: token },
         {
           passwordResetTokenExpiry: {
-            $gte: new Date(Date.now() - resetPasswordTokenMaxAge),
+            $gte: new Date(Date.now() + serverTimezoneOffset - resetPasswordTokenMaxAge),
           },
         },
       ],
@@ -292,6 +303,30 @@ const Mutation = {
 
     return true
   },
+
+  updateUserPassword: combineResolvers(
+    isAuthenticated,
+    async (root, { input: { password, newPassword } }, { authUser, User, HTTP_STATUS_CODE }: IContext) => {
+      const userFound = await User.findById(authUser.id)
+      if (!userFound) {
+        throw new ApolloError('Unauthorized', HTTP_STATUS_CODE.Unauthorized)
+      }
+
+      const isPasswordValid = await compare(password, userFound.password)
+      // ? User found but the password was incorrect
+      if (!isPasswordValid) {
+        throw new ApolloError(`Current password is incorrect`, HTTP_STATUS_CODE['Bad Request'])
+      }
+
+      // ? Update password, reset token and it's expiry
+      userFound.passwordResetToken = undefined
+      userFound.passwordResetTokenExpiry = undefined
+      userFound.password = newPassword
+      await userFound.save()
+
+      return true
+    }
+  ),
 
   updateUserInfo: combineResolvers(
     isAuthenticated,

@@ -6,7 +6,7 @@ import * as cookieParser from 'cookie-parser'
 // import * as cluster from 'cluster'
 // import { cpus } from 'os'
 
-import models from 'models'
+import { User } from 'models'
 import { Logger, NetWorkManager } from 'services'
 import { hl } from 'utils'
 
@@ -24,7 +24,7 @@ async function main() {
   await mongooseConnect().then(async () => {
     const now = new Date()
 
-    await models.User.updateMany({}, { $set: { isOnline: false, lastActiveAt: now } })
+    await User.updateMany({}, { $set: { isOnl: false, lastActiveAt: now } })
   })
 
   // * Initialize application

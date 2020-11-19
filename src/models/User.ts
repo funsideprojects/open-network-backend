@@ -1,5 +1,5 @@
 import { Document, Schema, model } from 'mongoose'
-import { hashSync } from 'bcryptjs'
+import { hashSync, compareSync } from 'bcryptjs'
 
 import { serverTimezoneOffset } from 'constants/Date'
 import { fullNameRegex, emailRegex, usernameRegex, passwordRegex } from 'constants/RegExr'
@@ -7,6 +7,8 @@ import { fullNameRegex, emailRegex, usernameRegex, passwordRegex } from 'constan
 export interface IUser extends Document {
   fullName: string
   email: string
+  emailVerificationToken: string
+  emailVerified: string
   username: string
   password: string
   passwordResetToken?: string
@@ -15,7 +17,7 @@ export interface IUser extends Document {
   imagePublicId?: string
   coverImage?: string
   coverImagePublicId?: string
-  isOnline: boolean
+  online: boolean
   lastActiveAt: Date
 }
 
@@ -47,6 +49,12 @@ const userSchema = new Schema(
       trim: true,
       unique: true,
     },
+    emailVerificationToken: String,
+    emailVerified: {
+      type: Boolean,
+      required: true,
+      default: false,
+    },
     username: {
       type: String,
       required: [true, 'Username is required'],
@@ -72,7 +80,7 @@ const userSchema = new Schema(
     imagePublicId: String,
     coverImage: String,
     coverImagePublicId: String,
-    isOnline: {
+    online: {
       type: Boolean,
       required: true,
       default: false,
@@ -84,7 +92,7 @@ const userSchema = new Schema(
   },
   {
     timestamps: {
-      currentTime: () => +new Date() + serverTimezoneOffset,
+      currentTime: () => new Date(Date.now() + serverTimezoneOffset),
     },
   }
 )
@@ -98,28 +106,30 @@ userSchema.set('toObject', {
 
 // ? Hash user's password before saving
 userSchema.pre<IUser>('save', function (next) {
-  if (this.isModified('password')) {
-    if (!passwordRegex.test(this.password)) {
-      return next(new Error('Password should not contain white-space, tab and new-line'))
-    }
+  const modifiedPaths = this.modifiedPaths()
 
+  if (modifiedPaths.indexOf('password') > -1) {
     if (this.password?.length < 6) {
       return next(new Error('Minimum password length should be 6 characters.'))
+    }
+
+    if (!passwordRegex.test(this.password)) {
+      return next(new Error('Password only accept word, digit and certain types of special characters'))
     }
 
     try {
       const hash = hashSync(this.password, 10)
       Object.assign(this, { password: hash })
-
-      return next()
     } catch (error) {
       return next(error)
     }
   }
-})
 
-// userSchema.post<IUser>('save', (doc, next) => {
-//   next()
-// })
+  if (modifiedPaths.indexOf('email')) {
+    Object.assign(this, { emailVerificationToken: undefined, emailVerified: false })
+  }
+
+  next()
+})
 
 export default model<IUser>('User', userSchema)

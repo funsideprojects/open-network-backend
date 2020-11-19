@@ -9,7 +9,7 @@ import 'apollo-cache-control'
 import { ERROR_TYPES, HTTP_STATUS_CODE, ERROR_MESSAGE } from 'constants/Errors'
 import { IS_USER_ONLINE } from 'constants/Subscriptions'
 import { schemaDirectives } from 'directives'
-import models, { IModels } from 'models'
+import * as models from 'models'
 import resolvers from 'resolvers'
 import { Logger, ConnectionManager } from 'services'
 import { hl } from 'utils'
@@ -18,6 +18,7 @@ import { mongooseConnection, ConnectionStates } from '_mongoose'
 import { IDecodedToken, verifyToken } from '_jsonwebtoken'
 
 // ? Interface
+type IModels = typeof models
 export interface IContext extends IModels {
   authUser: IDecodedToken
   ERROR_TYPES: typeof ERROR_TYPES
@@ -140,13 +141,13 @@ export function createApolloServer(graphqlPath: string) {
           // ? If user have no connection at the moment
           if (!userConnections) {
             // * Update user status
-            await models.User.findByIdAndUpdate(authUser.id, { isOnline: true })
+            await models.User.findByIdAndUpdate(authUser.id, { online: true })
 
             // * Publish user status
             pubSub.publish(IS_USER_ONLINE, {
               isUserOnline: {
                 userId: authUser.id,
-                isOnline: true,
+                online: true,
                 lastActiveAt: now,
               },
             })
@@ -179,7 +180,7 @@ export function createApolloServer(graphqlPath: string) {
           if (!userConnections) {
             // * Update user status and lastActiveAt
             await models.User.findByIdAndUpdate(authUser.id, {
-              isOnline: false,
+              online: false,
               lastActiveAt: now,
             })
 
@@ -187,7 +188,7 @@ export function createApolloServer(graphqlPath: string) {
             await pubSub.publish(IS_USER_ONLINE, {
               isUserOnline: {
                 userId: authUser.id,
-                isOnline: false,
+                online: false,
                 lastActiveAt: now,
               },
             })
