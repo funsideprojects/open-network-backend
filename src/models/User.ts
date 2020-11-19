@@ -125,7 +125,7 @@ userSchema.pre<IUser>('save', function (next) {
     }
   }
 
-  if (modifiedPaths.indexOf('email')) {
+  if (modifiedPaths.indexOf('email') > -1) {
     Object.assign(this, { emailVerificationToken: undefined, emailVerified: false })
   }
 
