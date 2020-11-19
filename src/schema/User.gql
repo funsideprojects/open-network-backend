@@ -122,8 +122,7 @@ type Query {
   # Get Suggestted people for authUser
   suggestUsers:                                                [UserPayload]
 
-  # Verify reset password token
-  verifyResetPasswordToken(email: String, token: String!):      Boolean
+  verifyPasswordResetToken(token: String!):                     Boolean
 }
 
 # ---------------------------------------------------------

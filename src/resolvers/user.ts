@@ -108,10 +108,9 @@ const Query = {
     return randomUsers.sort(() => Math.random() - 0.5)
   }),
 
-  verifyResetPasswordToken: async (root, { email, token }, { User }: IContext) => {
+  verifyPasswordResetToken: async (root, { token }, { User }: IContext) => {
     // ? Check if user exists and token is valid
     const userFound = await User.findOne({
-      email,
       passwordResetToken: token,
       passwordResetTokenExpiry: {
         $gte: new Date(Date.now() + serverTimezoneOffset - resetPasswordTokenMaxAge),

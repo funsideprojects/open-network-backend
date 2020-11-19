@@ -16,6 +16,7 @@ import { hl } from 'utils'
 
 import { mongooseConnection, ConnectionStates } from '_mongoose'
 import { IDecodedToken, verifyToken } from '_jsonwebtoken'
+import { serverTimezoneOffset } from 'constants/Date'
 
 // ? Interface
 type IModels = typeof models
@@ -124,7 +125,7 @@ export function createApolloServer(graphqlPath: string) {
           // ? Throw error if token is invalid
           if (!authUser) throw new Error(ERROR_TYPES.UNAUTHENTICATED)
 
-          const now = new Date().toUTCString()
+          const now = new Date(Date.now() + serverTimezoneOffset)
 
           // * Update connection manager
           const connectionId = ConnectionManager.addConnection(authUser.id, 'x')
@@ -134,7 +135,7 @@ export function createApolloServer(graphqlPath: string) {
           // new models.UserSession({
           //   userId: authUser.id,
           //   connectionId,
-          //   connectedAt: new Date(),
+          //   connectedAt: now,
           //   userAgent: _webSocket['upgradeReq']['headers']['user-agent'],
           // }).save(),
 
@@ -164,7 +165,7 @@ export function createApolloServer(graphqlPath: string) {
         const subscriptionContext: ISubscriptionContext = await context.initPromise
         if (subscriptionContext?.authUser && subscriptionContext?.connectionId) {
           const { authUser, connectionId } = subscriptionContext
-          const now = new Date()
+          const now = new Date(Date.now() + serverTimezoneOffset)
 
           // * Update connection manager
           ConnectionManager.removeConnection(authUser.id, connectionId)
