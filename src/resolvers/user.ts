@@ -265,7 +265,7 @@ const Mutation = {
     await User.findOneAndUpdate({ _id: userFound.id }, { passwordResetToken, passwordResetTokenExpiry })
 
     // ? Send an email contain reset link
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password?&t=${passwordResetToken}`
+    const resetLink = `${process.env.CORS_ORIGIN}/reset-password?&t=${passwordResetToken}`
     // todo Enhance html reset password template
     const mailOptions = {
       to: userFound.email,
