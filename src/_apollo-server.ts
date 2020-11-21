@@ -21,7 +21,7 @@ import { serverTimezoneOffset } from 'constants/Date'
 // ? Interface
 type IModels = typeof models
 export interface IContext extends IModels {
-  authUser: IDecodedToken
+  authUser: ReturnType<typeof verifyToken>
   ERROR_TYPES: typeof ERROR_TYPES
   HTTP_STATUS_CODE: typeof HTTP_STATUS_CODE
   ERROR_MESSAGE: typeof ERROR_MESSAGE
@@ -128,7 +128,7 @@ export function createApolloServer(graphqlPath: string) {
           const now = new Date(Date.now() + serverTimezoneOffset)
 
           // * Update connection manager
-          const connectionId = ConnectionManager.addConnection(authUser.id, 'x')
+          const connectionId = ConnectionManager.addConnection(authUser.id, 'device X')
           const userConnections = ConnectionManager.userConnections(authUser.id).length
 
           // todo - Create session

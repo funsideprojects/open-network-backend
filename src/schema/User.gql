@@ -10,16 +10,17 @@ type User {
   username:                   String!
   password:                   String!
   passwordResetToken:         String
-  passwordResetTokenExpiry:   String
   image:                      String
   imagePublicId:              String
   coverImage:                 String
   coverImagePublicId:         String
+  visibleToEveryone:          Boolean!
   online:                     Boolean!
-  lastActiveAt:               String!
+  displayOnlineStatus:        Boolean!
+  lastActiveAt:               Float!
 
-  createdAt:                  String!
-  updatedAt:                  String!
+  createdAt:                  Float!
+  updatedAt:                  Float!
 }
 
 # ---------------------------------------------------------
@@ -39,6 +40,10 @@ input SignUpInput {
   autoSignIn:                 Boolean!
 }
 
+input VerifyUserEmailInput {
+  token:                      String!
+}
+
 input RequestPasswordResetInput {
   email:                      String
   username:                   String
@@ -55,7 +60,10 @@ input UpdateUserPasswordInput {
 }
 
 input UpdateUserInfoInput {
+  email:                      String
   fullName:                   String
+  visibleToEveryone:          Boolean
+  displayOnlineStatus:        Boolean
 }
 
 input UpdateUserPhotoInput {
@@ -67,21 +75,38 @@ input UpdateUserPhotoInput {
 # * Return Payloads
 # ---------------------------------------------------------
 
+type AuthUserPayload {
+  id:                         ID
+  fullName:                   String
+  email:                      String
+  emailVerified:              Boolean       # Private, For authUser only
+  username:                   String
+  image:                      String
+  imagePublicId:              String
+  coverImage:                 String
+  coverImagePublicId:         String
+  visibleToEveryone:          Boolean       # Private, For authUser only
+  online:                     Boolean
+  displayOnlineStatus:        Boolean       # Private, For authUser only
+  lastActiveAt:               Float
+
+  createdAt:                  Float
+  updatedAt:                  Float
+}
+
 type UserPayload {
   id:                         ID
   fullName:                   String
   email:                      String
-  emailVerified:              Boolean
   username:                   String
   image:                      String
   imagePublicId:              String
   coverImage:                 String
   coverImagePublicId:         String
   online:                     Boolean
-  lastActiveAt:               String
+  lastActiveAt:               Float
 
-  createdAt:                  String
-  updatedAt:                  String
+  createdAt:                  Float
 }
 
 type UsersPayload {
@@ -92,7 +117,7 @@ type UsersPayload {
 type IsUserOnlinePayload {
   userId:                     ID
   online:                     Boolean
-  lastActiveAt:               String
+  lastActiveAt:               Float
 }
 
 type UpdateUserPhotoResponse {
@@ -107,22 +132,23 @@ type UpdateUserPhotoResponse {
 # ---------------------------------------------------------
 
 type Query {
-  # Get the current logged in user
-  getAuthUser:                                                  UserPayload
+  # Get the current signed in user
+  getAuthUser:                                                          AuthUserPayload
 
-  # Get user by username or id
-  getUser(username: String, id: ID):                            UserPayload
+  # Get user by username OR id
+  getUser(username: String, id: ID):                                    UserPayload
 
-  # Get all users except followed users and authUser
-  getUsers(skip: Int, limit: Int):                              UsersPayload
+  # Get users except following and authUser
+  getUsers(skip: Int, limit: Int):                                      UsersPayload
 
   # Search users by username or fullName
-  searchUsers(searchQuery: String!, skip: Int!, limit: Int!):  [UserPayload]
+  searchUsers(searchQuery: String!, skip: Int!, limit: Int!):           UsersPayload
 
-  # Get Suggestted people for authUser
-  suggestUsers:                                                [UserPayload]
+  # Get suggestted users for authUser
+  suggestUsers:                                                        [UserPayload]
 
-  verifyPasswordResetToken(token: String!):                     Boolean
+  verifyToken(token: String!):                                          Boolean
+
 }
 
 # ---------------------------------------------------------
@@ -130,20 +156,24 @@ type Query {
 # ---------------------------------------------------------
 
 type Mutation {
-  signin(input: SignInInput!):                                  Boolean
+  signin(input: SignInInput!):                                          Boolean
 
-  signup(input: SignUpInput!):                                  Boolean
+  signup(input: SignUpInput!):                                          Boolean
 
-  requestPasswordReset(input: RequestPasswordResetInput!):      Boolean
+  requestVerificationEmail:                                             Boolean
 
-  resetPassword(input: ResetPasswordInput!):                    Boolean
+  verifyUserEmail(input: VerifyUserEmailInput!):                        Boolean
 
-  updateUserPassword(input: UpdateUserPasswordInput!):          Boolean
+  requestPasswordReset(input: RequestPasswordResetInput!):              Boolean
 
-  updateUserInfo(input: UpdateUserInfoInput!):                  UserPayload
+  resetPassword(input: ResetPasswordInput!):                            Boolean
+
+  updateUserPassword(input: UpdateUserPasswordInput!):                  Boolean
+
+  updateUserInfo(input: UpdateUserInfoInput!):                          UserPayload
 
   # Upload user Profile or Cover photo
-  updateUserPhoto(input: UpdateUserPhotoInput!):                UpdateUserPhotoResponse!
+  updateUserPhoto(input: UpdateUserPhotoInput!):                        UpdateUserPhotoResponse!
 }
 
 # ---------------------------------------------------------

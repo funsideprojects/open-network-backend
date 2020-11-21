@@ -7,17 +7,18 @@ import { fullNameRegex, emailRegex, usernameRegex, passwordRegex } from 'constan
 export interface IUser extends Document {
   fullName: string
   email: string
-  emailVerificationToken: string
-  emailVerified: string
+  emailVerificationToken?: string
+  emailVerified: boolean
   username: string
   password: string
   passwordResetToken?: string
-  passwordResetTokenExpiry?: Date
   image?: string
   imagePublicId?: string
   coverImage?: string
   coverImagePublicId?: string
+  visibleToEveryone: boolean
   online: boolean
+  displayOnlineStatus: boolean
   lastActiveAt: Date
 }
 
@@ -75,15 +76,24 @@ const userSchema = new Schema(
       required: [true, 'Password is required'],
     },
     passwordResetToken: String,
-    passwordResetTokenExpiry: Date,
     image: String,
     imagePublicId: String,
     coverImage: String,
     coverImagePublicId: String,
+    visibleToEveryone: {
+      type: Boolean,
+      required: true,
+      default: true,
+    },
     online: {
       type: Boolean,
       required: true,
       default: false,
+    },
+    displayOnlineStatus: {
+      type: Boolean,
+      required: true,
+      default: true,
     },
     lastActiveAt: {
       type: Date,

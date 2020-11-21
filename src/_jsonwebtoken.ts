@@ -20,8 +20,9 @@ const { JWT_SECRET } = process.env
 export const accessTokenMaxAge = 1000 * 60 * 5 // ? 5 mins
 export const refreshTokenMaxAge = 1000 * 60 * 6 // ? 6 mins
 export const resetPasswordTokenMaxAge = 1000 * 60 * 60 // ? 1 hour
+export const emailVerificationTokenMaxAge = 1000 * 60 * 24 // ? 1 day
 
-export function generateToken(user: IUser, tokenType: 'access' | 'refresh' | 'resetPassword') {
+export function generateToken(user: IUser, tokenType: 'access' | 'refresh' | 'resetPassword' | 'emailVerification') {
   if (!JWT_SECRET) throw new Error('[Jsonwebtoken] Missing JWT_SECRET')
 
   return sign(user, JWT_SECRET, {
@@ -30,7 +31,9 @@ export function generateToken(user: IUser, tokenType: 'access' | 'refresh' | 're
         ? accessTokenMaxAge
         : tokenType === 'refresh'
         ? refreshTokenMaxAge
-        : resetPasswordTokenMaxAge,
+        : tokenType === 'resetPassword'
+        ? resetPasswordTokenMaxAge
+        : emailVerificationTokenMaxAge,
   })
 }
 
