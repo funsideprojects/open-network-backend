@@ -22,9 +22,7 @@ process.on('exit', (code) => {
 async function main() {
   // * Connect to database
   await mongooseConnect().then(async () => {
-    const now = new Date()
-
-    await User.updateMany({}, { $set: { isOnl: false, lastActiveAt: now } })
+    await User.updateMany({ online: true }, { $set: { online: false, lastActiveAt: new Date() } })
   })
 
   // * Initialize application

@@ -1,3 +1,4 @@
+import { CookieOptions } from 'express'
 import { compare } from 'bcryptjs'
 import { ApolloError } from 'apollo-server'
 import { combineResolvers } from 'graphql-resolvers'
@@ -6,13 +7,7 @@ import { serverTimezoneOffset } from 'constants/Date'
 import { Mailer, UploadManager } from 'services'
 
 import { IContext } from '_apollo-server'
-import {
-  generateToken,
-  verifyToken,
-  accessTokenMaxAge,
-  refreshTokenMaxAge,
-  resetPasswordTokenMaxAge,
-} from '_jsonwebtoken'
+import { TokenTypes, generateToken, verifyToken, accessTokenMaxAge, refreshTokenMaxAge } from '_jsonwebtoken'
 
 import { isAuthenticated } from './high-order-resolvers'
 
@@ -56,14 +51,20 @@ export const Mutation = {
       try {
         const user = {
           id: newUser.id,
-          email: newUser.email,
           username: newUser.username,
           fullName: newUser.fullName,
         }
 
-        const accessToken = generateToken(user, 'access')
-        const refreshToken = generateToken(user, 'refresh')
-        const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV === 'production' }
+        const accessToken = generateToken({ type: TokenTypes.Access, payload: user })
+        const refreshToken = generateToken({
+          type: TokenTypes.Refresh,
+          payload: { ip: 'unknown', userAgent: req.headers['user-agent'] || 'unknown' },
+        })
+        const cookieOptions: CookieOptions = {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        }
 
         req.res.cookie('accessToken', accessToken, { maxAge: accessTokenMaxAge, ...cookieOptions })
         req.res.cookie('refreshToken', refreshToken, { maxAge: refreshTokenMaxAge, ...cookieOptions })
@@ -107,17 +108,25 @@ export const Mutation = {
     try {
       const user = {
         id: userFound.id,
-        email: userFound.email,
         username: userFound.username,
         fullName: userFound.fullName,
       }
 
-      const accessToken = generateToken(user, 'access')
-      const refreshToken = generateToken(user, 'refresh')
-      const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV === 'production' }
+      console.log(req)
 
-      req.res.cookie('accessToken', accessToken, { maxAge: accessTokenMaxAge, ...cookieOptions })
-      req.res.cookie('refreshToken', refreshToken, { maxAge: refreshTokenMaxAge, ...cookieOptions })
+      const accessToken = generateToken({ type: TokenTypes.Access, payload: user })
+      const refreshToken = generateToken({
+        type: TokenTypes.Refresh,
+        payload: { ip: '', userAgent: '' },
+      })
+      const cookieOptions: CookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      }
+
+      req.res.cookie('x-access-token', accessToken, { maxAge: accessTokenMaxAge, ...cookieOptions })
+      req.res.cookie('x-refresh-token', refreshToken, { maxAge: refreshTokenMaxAge, ...cookieOptions })
 
       return true
     } catch (error) {
@@ -139,13 +148,12 @@ export const Mutation = {
 
       const user = {
         id: userFound.id,
-        email: userFound.email,
         username: userFound.username,
         fullName: userFound.fullName,
       }
 
       // ? Set password reset token and it's expiry
-      const emailVerificationToken = generateToken(user, 'emailVerification')
+      const emailVerificationToken = generateToken({ type: TokenTypes.EmailVerification, payload: user })
 
       await User.findOneAndUpdate({ _id: userFound.id }, { emailVerificationToken })
 
@@ -204,12 +212,11 @@ export const Mutation = {
 
     const user = {
       id: userFound.id,
-      email: userFound.email,
       username: userFound.username,
       fullName: userFound.fullName,
     }
 
-    const passwordResetToken = generateToken(user, 'resetPassword')
+    const passwordResetToken = generateToken({ type: TokenTypes.ResetPassword, payload: user })
 
     await User.findOneAndUpdate({ _id: userFound.id }, { passwordResetToken })
 

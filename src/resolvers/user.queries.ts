@@ -3,7 +3,7 @@ import { ApolloError } from 'apollo-server'
 import { combineResolvers } from 'graphql-resolvers'
 
 import { IContext } from '_apollo-server'
-import { verifyToken } from '_jsonwebtoken'
+import { TokenTypes, generateToken, verifyToken, accessTokenMaxAge, refreshTokenMaxAge } from '_jsonwebtoken'
 
 import { getRequestedFieldsFromInfo } from './functions'
 import { isAuthenticated } from './high-order-resolvers'
@@ -170,5 +170,26 @@ export const Query = {
   // ? Check if user exists and token is valid
   verifyToken: async (root, { token }, { User }: IContext) => {
     return !!verifyToken(token)
+  },
+
+  silentRenew: (root, args, { req, ERROR_MESSAGE, HTTP_STATUS_CODE }: IContext) => {
+    // ? Throw error if express middleware failed to initialize response
+    if (!req.res) {
+      throw new ApolloError(ERROR_MESSAGE['Internal Server Error'], HTTP_STATUS_CODE['Internal Server Error'])
+    }
+
+    const authUser = verifyToken(req.cookies.refreshToken)
+    if (!authUser) {
+      throw new ApolloError('This token is either invalid or expired', HTTP_STATUS_CODE['Bad Request'])
+    }
+
+    const accessToken = generateToken({ type: TokenTypes.Access, payload: authUser })
+    const refreshToken = generateToken({ type: TokenTypes.Refresh, payload: { ip: '', userAgent: '' } })
+    const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV === 'production' }
+
+    req.res.cookie('accessToken', accessToken, { maxAge: accessTokenMaxAge, ...cookieOptions })
+    req.res.cookie('refreshToken', refreshToken, { maxAge: refreshTokenMaxAge, ...cookieOptions })
+
+    return true
   },
 }

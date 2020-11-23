@@ -4,8 +4,6 @@ import { LOG_FILE_UPDATED } from 'constants/Subscriptions'
 
 import { pubSub } from '_apollo-server'
 
-import { startWatching } from 'utils/log-file'
-
 function publishChanges(change: string) {
   pubSub.publish(LOG_FILE_UPDATED, {
     logFileUpdated: change,

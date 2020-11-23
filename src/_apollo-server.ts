@@ -15,7 +15,7 @@ import { Logger, ConnectionManager } from 'services'
 import { hl } from 'utils'
 
 import { mongooseConnection, ConnectionStates } from '_mongoose'
-import { IDecodedToken, verifyToken } from '_jsonwebtoken'
+import { IPayload, verifyToken } from '_jsonwebtoken'
 import { serverTimezoneOffset } from 'constants/Date'
 
 // ? Interface
@@ -29,7 +29,7 @@ export interface IContext extends IModels {
 }
 
 export interface ISubscriptionContext {
-  authUser: IDecodedToken
+  authUser: IPayload
   connectionId: string
   ERROR_TYPES: typeof ERROR_TYPES
 }
@@ -110,14 +110,14 @@ export function createApolloServer(graphqlPath: string) {
 
       // ? Query / Mutation
       let authUser: ReturnType<typeof verifyToken>
-
-      if (req.cookies.accessToken) {
-        authUser = verifyToken(req.cookies.accessToken)
+      if (req.cookies['x-access-token']) {
+        authUser = verifyToken(req.cookies['x-access-token'])
       }
 
       return Object.assign({}, { authUser }, models, { ERROR_TYPES, HTTP_STATUS_CODE, ERROR_MESSAGE }, { req })
     },
     subscriptions: {
+      path: graphqlPath,
       onConnect: async (connectionParams, _webSocket) => {
         if (connectionParams['authorization']) {
           const authUser = verifyToken(connectionParams['authorization'])

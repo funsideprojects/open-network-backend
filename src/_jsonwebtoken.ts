@@ -1,11 +1,22 @@
 import { sign, verify } from 'jsonwebtoken'
 
-// ? Interface
-export interface IUser {
+// ? Types
+export enum TokenTypes {
+  Access = 'access',
+  Refresh = 'refresh',
+  ResetPassword = 'reset-password',
+  EmailVerification = 'email-verification',
+}
+
+export type UserPayload = {
   id: string
-  email: string
   username: string
   fullName: string
+}
+
+export type RefreshTokenPayload = {
+  ip: string
+  userAgent: string
 }
 
 interface ITokenMetadata {
@@ -13,25 +24,46 @@ interface ITokenMetadata {
   exp: number
 }
 
-export interface IDecodedToken extends IUser, ITokenMetadata {}
+type AccessToken = {
+  type: TokenTypes.Access
+  payload: UserPayload
+}
 
-const { JWT_SECRET } = process.env
+type RefreshToken = {
+  type: TokenTypes.Refresh
+  payload: RefreshTokenPayload
+}
 
-export const accessTokenMaxAge = 1000 * 60 * 5 // ? 5 mins
-export const refreshTokenMaxAge = 1000 * 60 * 6 // ? 6 mins
+type ResetPasswordToken = {
+  type: TokenTypes.ResetPassword
+  payload: UserPayload
+}
+
+type EmailVerification = {
+  type: TokenTypes.EmailVerification
+  payload: UserPayload
+}
+
+type TokenConfig = AccessToken | RefreshToken | ResetPasswordToken | EmailVerification
+export interface IPayload extends UserPayload, RefreshTokenPayload, ITokenMetadata {}
+
+export const accessTokenMaxAge = 1000 * 60 * 5 // ? 10 mins
+export const refreshTokenMaxAge = 1000 * 60 * 60 * 24 * 365 * 20 // ? 20 years
 export const resetPasswordTokenMaxAge = 1000 * 60 * 60 // ? 1 hour
 export const emailVerificationTokenMaxAge = 1000 * 60 * 24 // ? 1 day
 
-export function generateToken(user: IUser, tokenType: 'access' | 'refresh' | 'resetPassword' | 'emailVerification') {
+const { JWT_SECRET } = process.env
+
+export function generateToken({ type, payload }: TokenConfig) {
   if (!JWT_SECRET) throw new Error('[Jsonwebtoken] Missing JWT_SECRET')
 
-  return sign(user, JWT_SECRET, {
+  return sign(payload, JWT_SECRET, {
     expiresIn:
-      tokenType === 'access'
+      type === TokenTypes.Access
         ? accessTokenMaxAge
-        : tokenType === 'refresh'
+        : type === TokenTypes.Refresh
         ? refreshTokenMaxAge
-        : tokenType === 'resetPassword'
+        : type === TokenTypes.ResetPassword
         ? resetPasswordTokenMaxAge
         : emailVerificationTokenMaxAge,
   })
@@ -41,9 +73,9 @@ export function verifyToken(token: string) {
   if (!JWT_SECRET) throw new Error('[Jsonwebtoken] Missing JWT_SECRET')
 
   try {
-    const authUser = verify(token, JWT_SECRET)
+    const payload = verify(token, JWT_SECRET)
 
-    return authUser ? (authUser as IDecodedToken) : undefined
+    return payload ? (payload as IPayload) : undefined
   } catch {
     return undefined
   }
