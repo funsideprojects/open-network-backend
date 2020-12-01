@@ -1,1 +1,3 @@
-directive @note on FIELD_DEFINITION
+directive @debug on FIELD_DEFINITION
+
+directive @auth(optional: Boolean) on FIELD_DEFINITION

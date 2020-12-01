@@ -1,15 +1,13 @@
 import { CookieOptions } from 'express'
 import { compare } from 'bcryptjs'
 import { ApolloError } from 'apollo-server'
-import { combineResolvers } from 'graphql-resolvers'
 
 import { serverTimezoneOffset } from 'constants/Date'
+import { getRequestIP, getRequestUserAgent } from 'resolvers/functions'
 import { Mailer, UploadManager } from 'services'
 
 import { IContext } from '_apollo-server'
 import { TokenTypes, generateToken, verifyToken, accessTokenMaxAge, refreshTokenMaxAge } from '_jsonwebtoken'
-
-import { isAuthenticated } from './high-order-resolvers'
 
 export const Mutation = {
   signup: async (
@@ -58,26 +56,23 @@ export const Mutation = {
         const accessToken = generateToken({ type: TokenTypes.Access, payload: user })
         const refreshToken = generateToken({
           type: TokenTypes.Refresh,
-          payload: { ip: 'unknown', userAgent: req.headers['user-agent'] || 'unknown' },
+          payload: { ...user, ip: getRequestIP(req), userAgent: getRequestUserAgent(req) },
         })
         const cookieOptions: CookieOptions = {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
-          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         }
 
-        req.res.cookie('accessToken', accessToken, { maxAge: accessTokenMaxAge, ...cookieOptions })
-        req.res.cookie('refreshToken', refreshToken, { maxAge: refreshTokenMaxAge, ...cookieOptions })
-
-        return true
+        req.res.cookie(TokenTypes.Access, accessToken, { ...cookieOptions, maxAge: accessTokenMaxAge })
+        req.res.cookie(TokenTypes.Refresh, refreshToken, { ...cookieOptions, maxAge: refreshTokenMaxAge })
       } catch (error) {
         await User.deleteOne({ _id: newUser._id })
 
         throw new ApolloError(ERROR_MESSAGE['Internal Server Error'], HTTP_STATUS_CODE['Internal Server Error'], error)
       }
-    } else {
-      return true
     }
+
+    return true
   },
 
   signin: async (
@@ -112,21 +107,18 @@ export const Mutation = {
         fullName: userFound.fullName,
       }
 
-      console.log(req)
-
       const accessToken = generateToken({ type: TokenTypes.Access, payload: user })
       const refreshToken = generateToken({
         type: TokenTypes.Refresh,
-        payload: { ip: '', userAgent: '' },
+        payload: { ...user, ip: getRequestIP(req), userAgent: getRequestUserAgent(req) },
       })
       const cookieOptions: CookieOptions = {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       }
 
-      req.res.cookie('x-access-token', accessToken, { maxAge: accessTokenMaxAge, ...cookieOptions })
-      req.res.cookie('x-refresh-token', refreshToken, { maxAge: refreshTokenMaxAge, ...cookieOptions })
+      req.res.cookie(TokenTypes.Access, accessToken, { ...cookieOptions, maxAge: accessTokenMaxAge })
+      req.res.cookie(TokenTypes.Refresh, refreshToken, { ...cookieOptions, maxAge: refreshTokenMaxAge })
 
       return true
     } catch (error) {
@@ -134,45 +126,43 @@ export const Mutation = {
     }
   },
 
-  requestVerificationEmail: combineResolvers(
-    isAuthenticated,
-    async (root, args, { authUser, User, HTTP_STATUS_CODE }: IContext) => {
-      const userFound = await User.findById(authUser!.id)
-      if (!userFound) {
-        throw new ApolloError('Unauthorized', HTTP_STATUS_CODE.Unauthorized)
-      }
-
-      if (userFound.emailVerified) {
-        throw new ApolloError('Email linked to this account has been verified already', HTTP_STATUS_CODE['Bad Request'])
-      }
-
-      const user = {
-        id: userFound.id,
-        username: userFound.username,
-        fullName: userFound.fullName,
-      }
-
-      // ? Set password reset token and it's expiry
-      const emailVerificationToken = generateToken({ type: TokenTypes.EmailVerification, payload: user })
-
-      await User.findOneAndUpdate({ _id: userFound.id }, { emailVerificationToken })
-
-      // ? Send an email contain reset link
-      const emailVerificationLink = `${process.env.CORS_ORIGIN}/verify-email/${emailVerificationToken}`
-      // todo Enhance html template
-      const mailOptions = {
-        to: userFound.email,
-        subject: 'Verify Email',
-        html: emailVerificationLink,
-      }
-
-      await Mailer.sendMail(mailOptions)
-
-      return true
+  requestVerificationEmail: async (root, args, { authUser, User, HTTP_STATUS_CODE }: IContext) => {
+    const userFound = await User.findById(authUser!.id)
+    if (!userFound) {
+      throw new ApolloError('Unauthorized', HTTP_STATUS_CODE.Unauthorized)
     }
-  ),
+
+    if (userFound.emailVerified) {
+      throw new ApolloError('Email linked to this account has been verified already', HTTP_STATUS_CODE['Bad Request'])
+    }
+
+    const user = {
+      id: userFound.id,
+      username: userFound.username,
+      fullName: userFound.fullName,
+    }
+
+    // ? Set password reset token and it's expiry
+    const emailVerificationToken = generateToken({ type: TokenTypes.EmailVerification, payload: user })
+
+    await User.findOneAndUpdate({ _id: userFound.id }, { emailVerificationToken })
+
+    // ? Send an email contain reset link
+    const emailVerificationLink = `${process.env.CORS_ORIGIN}/verify-email/${emailVerificationToken}`
+    // todo Enhance html template
+    const mailOptions = {
+      to: userFound.email,
+      subject: 'Verify Email',
+      html: emailVerificationLink,
+    }
+
+    await Mailer.sendMail(mailOptions)
+
+    return true
+  },
 
   verifyUserEmail: async (root, { input: { token } }, { User, HTTP_STATUS_CODE }: IContext) => {
+    // ? Validate token
     const authUser = verifyToken(token)
     if (authUser) {
       throw new ApolloError('This token is either invalid or expired', HTTP_STATUS_CODE['Bad Request'])
@@ -187,7 +177,7 @@ export const Mutation = {
     userFound.emailVerified = true
     await userFound.save()
 
-    return !!authUser
+    return true
   },
 
   requestPasswordReset: async (root, { input: { email, username } }, { User, HTTP_STATUS_CODE }: IContext) => {
@@ -218,7 +208,7 @@ export const Mutation = {
 
     const passwordResetToken = generateToken({ type: TokenTypes.ResetPassword, payload: user })
 
-    await User.findOneAndUpdate({ _id: userFound.id }, { passwordResetToken })
+    await User.updateOne({ _id: userFound.id }, { $set: { passwordResetToken } })
 
     // ? Send an email contain reset link
     const resetLink = `${process.env.CORS_ORIGIN}/reset-password/${passwordResetToken}`
@@ -254,71 +244,80 @@ export const Mutation = {
     return true
   },
 
-  updateUserPassword: combineResolvers(
-    isAuthenticated,
-    async (root, { input: { password, newPassword } }, { authUser, User, HTTP_STATUS_CODE }: IContext) => {
-      const userFound = await User.findById(authUser!.id)
-      if (!userFound) {
-        throw new ApolloError('Unauthorized', HTTP_STATUS_CODE.Unauthorized)
-      }
-
-      const isPasswordValid = await compare(password, userFound.password)
-      // ? User found but the password was incorrect
-      if (!isPasswordValid) {
-        throw new ApolloError(`Current password is incorrect`, HTTP_STATUS_CODE['Bad Request'])
-      }
-
-      // ? Update password, reset token and it's expiry
-      userFound.passwordResetToken = undefined
-      userFound.password = newPassword
-      await userFound.save()
-
-      return true
+  updateUserPassword: async (
+    root,
+    { input: { password, newPassword } },
+    { authUser, User, HTTP_STATUS_CODE }: IContext
+  ) => {
+    const userFound = await User.findById(authUser!.id)
+    if (!userFound) {
+      throw new ApolloError('Unauthorized', HTTP_STATUS_CODE.Unauthorized)
     }
-  ),
 
-  updateUserInfo: combineResolvers(
-    isAuthenticated,
-    async (root, { input: { fullName } }, { authUser, User }: IContext) => {
-      return await User.findByIdAndUpdate(authUser!.id, { $set: { fullName } }, { new: true, runValidators: true })
+    const isPasswordValid = await compare(password, userFound.password)
+    // ? User found but the password was incorrect
+    if (!isPasswordValid) {
+      throw new ApolloError(`Current password is incorrect`, HTTP_STATUS_CODE['Bad Request'])
     }
-  ),
 
-  updateUserPhoto: combineResolvers(
-    isAuthenticated,
-    async (root, { input: { image, isCover } }, { authUser, User, HTTP_STATUS_CODE }: IContext) => {
-      let fieldsToUpdate: { [key: string]: string | undefined }
+    // ? Update password, reset token and it's expiry
+    userFound.passwordResetToken = undefined
+    userFound.password = newPassword
+    await userFound.save()
 
-      const userFound = await User.findById(authUser!.id)
-      if (!userFound) {
-        throw new ApolloError('Unauthorized', HTTP_STATUS_CODE.Unauthorized)
+    return true
+  },
+
+  updateUserInfo: async (
+    root,
+    { input: { email, fullName, visibleToEveryone, displayOnlineStatus } },
+    { authUser, User, HTTP_STATUS_CODE }: IContext
+  ) => {
+    const userFound = await User.findById(authUser!.id)
+    if (!userFound) {
+      throw new ApolloError('Unauthorized', HTTP_STATUS_CODE.Unauthorized)
+    }
+
+    userFound.email = email
+    userFound.fullName = fullName
+    userFound.visibleToEveryone = visibleToEveryone
+    userFound.displayOnlineStatus = displayOnlineStatus
+
+    return await userFound.save()
+  },
+
+  updateUserPhoto: async (root, { input: { image, isCover } }, { authUser, User, HTTP_STATUS_CODE }: IContext) => {
+    let fieldsToUpdate: { [key: string]: string | undefined }
+
+    const userFound = await User.findById(authUser!.id)
+    if (!userFound) {
+      throw new ApolloError('Unauthorized', HTTP_STATUS_CODE.Unauthorized)
+    }
+
+    if (image) {
+      const uploadedFile = await UploadManager.uploadFile(authUser!.username, image, ['image'])
+
+      fieldsToUpdate = {
+        [isCover ? 'coverImage' : 'image']: uploadedFile.fileAddress,
+        [isCover ? 'coverImagePublicId' : 'imagePublicId']: uploadedFile.filePublicId,
       }
 
-      if (image) {
-        const uploadedFile = await UploadManager.uploadFile(authUser!.username, image, ['image'])
-
-        fieldsToUpdate = {
-          [isCover ? 'coverImage' : 'image']: uploadedFile.fileAddress,
-          [isCover ? 'coverImagePublicId' : 'imagePublicId']: uploadedFile.filePublicId,
-        }
-
-        if (userFound[isCover ? 'coverImage' : 'image']) {
-          UploadManager.removeUploadedFile('image', userFound[isCover ? 'coverImage' : 'image']!)
-        }
-      } else {
-        fieldsToUpdate = {
-          [isCover ? 'coverImage' : 'image']: undefined,
-          [isCover ? 'coverImagePublicId' : 'imagePublicId']: undefined,
-        }
-
-        if (userFound && userFound[isCover ? 'coverImage' : 'image']) {
-          UploadManager.removeUploadedFile('image', userFound[isCover ? 'coverImage' : 'image']!)
-        }
+      if (userFound[isCover ? 'coverImage' : 'image']) {
+        UploadManager.removeUploadedFile('image', userFound[isCover ? 'coverImage' : 'image']!)
+      }
+    } else {
+      fieldsToUpdate = {
+        [isCover ? 'coverImage' : 'image']: undefined,
+        [isCover ? 'coverImagePublicId' : 'imagePublicId']: undefined,
       }
 
-      const updatedUser = await User.findByIdAndUpdate(authUser!.id, { $set: fieldsToUpdate }, { new: true })
-
-      return updatedUser
+      if (userFound && userFound[isCover ? 'coverImage' : 'image']) {
+        UploadManager.removeUploadedFile('image', userFound[isCover ? 'coverImage' : 'image']!)
+      }
     }
-  ),
+
+    const updatedUser = await User.findByIdAndUpdate(authUser!.id, { $set: fieldsToUpdate }, { new: true })
+
+    return updatedUser
+  },
 }

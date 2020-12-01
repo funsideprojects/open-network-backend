@@ -2,11 +2,11 @@ import { join } from 'path'
 import { Request } from 'express'
 import { PubSub } from 'apollo-server'
 import * as depthLimit from 'graphql-depth-limit'
-import { ApolloServer } from 'apollo-server-express'
+import { ApolloServer, ApolloError } from 'apollo-server-express'
 import { fileLoader, mergeTypes } from 'merge-graphql-schemas'
 import 'apollo-cache-control'
 
-import { ERROR_TYPES, HTTP_STATUS_CODE, ERROR_MESSAGE } from 'constants/Errors'
+import { HTTP_STATUS_CODE, ERROR_MESSAGE } from 'constants/Errors'
 import { IS_USER_ONLINE } from 'constants/Subscriptions'
 import { schemaDirectives } from 'directives'
 import * as models from 'models'
@@ -15,23 +15,21 @@ import { Logger, ConnectionManager } from 'services'
 import { hl } from 'utils'
 
 import { mongooseConnection, ConnectionStates } from '_mongoose'
-import { IPayload, verifyToken } from '_jsonwebtoken'
+import { UserPayload, verifyToken } from '_jsonwebtoken'
 import { serverTimezoneOffset } from 'constants/Date'
 
 // ? Interface
 type IModels = typeof models
 export interface IContext extends IModels {
-  authUser: ReturnType<typeof verifyToken>
-  ERROR_TYPES: typeof ERROR_TYPES
+  authUser?: UserPayload
   HTTP_STATUS_CODE: typeof HTTP_STATUS_CODE
   ERROR_MESSAGE: typeof ERROR_MESSAGE
   req: Request
 }
 
 export interface ISubscriptionContext {
-  authUser: IPayload
+  authUser: UserPayload
   connectionId: string
-  ERROR_TYPES: typeof ERROR_TYPES
 }
 
 // ? Create pubSub instance for publishing events
@@ -62,13 +60,18 @@ export function createApolloServer(graphqlPath: string) {
         serverWillStart(e) {
           Logger.info(`[Apollo Server] Ready at ${hl.success(graphqlPath)}`)
         },
-        // requestDidStart() {
-        // return {
-        //   willSendResponse(requestContext) {
-        //     requestContext.response.http?.headers.delete('X-Powered-By')
-        //   },
-        // }
-        // },
+        requestDidStart(_requestContext) {
+          return {
+            // didResolveSource(reqContext) {},
+            // parsingDidStart(reqContext) {},
+            // validationDidStart(reqContext) {},
+            // didResolveOperation(reqContext) {},
+            // responseForOperation(reqContext) {},
+            // executionDidStart(reqContext) {},
+            // didEncounterErrors() {},
+            // willSendResponse(reqContext) {},
+          }
+        },
       },
     ],
     schemaDirectives,
@@ -108,13 +111,8 @@ export function createApolloServer(graphqlPath: string) {
       // ? Subscription
       if (connection) return connection.context
 
-      // ? Query / Mutation
-      let authUser: ReturnType<typeof verifyToken>
-      if (req.cookies['x-access-token']) {
-        authUser = verifyToken(req.cookies['x-access-token'])
-      }
-
-      return Object.assign({}, { authUser }, models, { ERROR_TYPES, HTTP_STATUS_CODE, ERROR_MESSAGE }, { req })
+      // ? Queries / Mutations
+      return Object.assign({}, models, { HTTP_STATUS_CODE, ERROR_MESSAGE }, { req })
     },
     subscriptions: {
       path: graphqlPath,
@@ -123,7 +121,9 @@ export function createApolloServer(graphqlPath: string) {
           const authUser = verifyToken(connectionParams['authorization'])
 
           // ? Throw error if token is invalid
-          if (!authUser) throw new Error(ERROR_TYPES.UNAUTHENTICATED)
+          if (!authUser) {
+            throw new ApolloError('Unauthorized', HTTP_STATUS_CODE.Unauthorized)
+          }
 
           const now = new Date(Date.now() + serverTimezoneOffset)
 

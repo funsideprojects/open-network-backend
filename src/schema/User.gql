@@ -132,24 +132,20 @@ type UpdateUserPhotoResponse {
 # ---------------------------------------------------------
 
 type Query {
-  # Get the current signed in user
-  getAuthUser:                                                          AuthUserPayload
+  getAuthUser:                                                          AuthUserPayload @auth
 
   # Get user by username OR id
-  getUser(username: String, id: ID):                                    UserPayload
+  getUser(username: String, id: ID):                                    UserPayload @auth(optional: true)
 
   # Get users except following and authUser
-  getUsers(skip: Int, limit: Int):                                      UsersPayload
+  getUsers(skip: Int, limit: Int):                                      UsersPayload @auth
 
   # Search users by username or fullName
-  searchUsers(searchQuery: String!, skip: Int!, limit: Int!):           UsersPayload
+  searchUsers(searchQuery: String!, skip: Int!, limit: Int!):           UsersPayload @auth
 
-  # Get suggestted users for authUser
-  suggestUsers:                                                        [UserPayload]
+  suggestUsers:                                                        [UserPayload] @auth
 
   verifyToken(token: String!):                                          Boolean
-
-  silentRenew:                                                          Boolean
 }
 
 # ---------------------------------------------------------
@@ -161,7 +157,7 @@ type Mutation {
 
   signup(input: SignUpInput!):                                          Boolean
 
-  requestVerificationEmail:                                             Boolean
+  requestVerificationEmail:                                             Boolean @auth
 
   verifyUserEmail(input: VerifyUserEmailInput!):                        Boolean
 
@@ -169,12 +165,11 @@ type Mutation {
 
   resetPassword(input: ResetPasswordInput!):                            Boolean
 
-  updateUserPassword(input: UpdateUserPasswordInput!):                  Boolean
+  updateUserPassword(input: UpdateUserPasswordInput!):                  Boolean @auth
 
-  updateUserInfo(input: UpdateUserInfoInput!):                          UserPayload
+  updateUserInfo(input: UpdateUserInfoInput!):                          AuthUserPayload @auth
 
-  # Upload user Profile or Cover photo
-  updateUserPhoto(input: UpdateUserPhotoInput!):                        UpdateUserPhotoResponse!
+  updateUserPhoto(input: UpdateUserPhotoInput!):                        UpdateUserPhotoResponse @auth
 }
 
 # ---------------------------------------------------------
@@ -182,6 +177,5 @@ type Mutation {
 # ---------------------------------------------------------
 
 type Subscription {
-  # Subscribe to is user online event
   isUserOnline(userId: ID!):                                  IsUserOnlinePayload
 }

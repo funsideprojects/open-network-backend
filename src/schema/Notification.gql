@@ -1,5 +1,5 @@
 # ---------------------------------------------------------
-# *_: Model Objects
+# * Model Objects
 # ---------------------------------------------------------
 
 type Notification {
@@ -15,19 +15,12 @@ type Notification {
   updatedAt:          String
 }
 
-enum NotificationType {
-  LIKE
-  COMMENT
-  FOLLOW
-  NOTIFICATION
-}
-
 # ---------------------------------------------------------
-# *_: Input Objects
+# * Input Objects
 # ---------------------------------------------------------
 
 input UpdateNotificationSeenInput {
-  id:                 ID
+  ids:               [ID]
   seenAll:            Boolean
 }
 
@@ -36,8 +29,15 @@ input DeleteNotificationInput {
 }
 
 # ---------------------------------------------------------
-# *_: Return Payloads
+# * Return Payloads
 # ---------------------------------------------------------
+
+enum NotificationType {
+  LIKE
+  COMMENT
+  FOLLOW
+  NOTIFICATION
+}
 
 enum NotificationOperationType {
   CREATE
@@ -74,31 +74,27 @@ type NotificationUpdatedPayload {
 }
 
 # ---------------------------------------------------------
-# *_: Queries
+# * Queries
 # ---------------------------------------------------------
 
 type Query {
-  # DONE: Get authUser's notifications
-  getNotifications(skip: Int, limit: Int):                              NotificationsPayload
+  getNotifications(skip: Int!, limit: Int!):                        NotificationsPayload @auth
 }
 
 # ---------------------------------------------------------
-# *_: Mutations
+# * Mutations
 # ---------------------------------------------------------
 
 type Mutation {
-  # DONE: Update notification seen
-  updateNotificationSeen(input: UpdateNotificationSeenInput!):          Boolean
+  updateNotificationSeen(input: UpdateNotificationSeenInput!):    Boolean @auth
 
-  # DONE: Delete a notification
-  deleteNotification(input: DeleteNotificationInput!):                  Boolean
+  deleteNotification(input: DeleteNotificationInput!):            Boolean @auth
 }
 
 # ---------------------------------------------------------
-# *_: Subscriptions
+# * Subscriptions
 # ---------------------------------------------------------
 
 type Subscription {
-  # DONE: Subscribe to notification created or deleted event
-  notificationUpdated:                                                  NotificationUpdatedPayload
+  notificationUpdated:                                            NotificationUpdatedPayload @auth
 }

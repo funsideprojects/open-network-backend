@@ -35,7 +35,7 @@ async function main() {
 
   // ? CORS
   if (process.env.CORS_ORIGIN) {
-    app.use(cors({ origin: process.env.CORS_ORIGIN, credentials: true }))
+    app.use(cors({ origin: process.env.CORS_ORIGIN.split(','), credentials: true }))
   }
 
   // ? Cookie

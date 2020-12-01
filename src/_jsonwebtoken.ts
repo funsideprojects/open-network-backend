@@ -2,8 +2,8 @@ import { sign, verify } from 'jsonwebtoken'
 
 // ? Types
 export enum TokenTypes {
-  Access = 'access',
-  Refresh = 'refresh',
+  Access = 'x-access-token',
+  Refresh = 'x-refresh-token',
   ResetPassword = 'reset-password',
   EmailVerification = 'email-verification',
 }
@@ -14,14 +14,9 @@ export type UserPayload = {
   fullName: string
 }
 
-export type RefreshTokenPayload = {
+export type RefreshTokenPayload = UserPayload & {
   ip: string
   userAgent: string
-}
-
-interface ITokenMetadata {
-  iat: number
-  exp: number
 }
 
 type AccessToken = {
@@ -45,9 +40,9 @@ type EmailVerification = {
 }
 
 type TokenConfig = AccessToken | RefreshToken | ResetPasswordToken | EmailVerification
-export interface IPayload extends UserPayload, RefreshTokenPayload, ITokenMetadata {}
+export interface IPayload extends UserPayload, RefreshTokenPayload {}
 
-export const accessTokenMaxAge = 1000 * 60 * 5 // ? 10 mins
+export const accessTokenMaxAge = 1000 * 60 * 10 // ? 10 mins
 export const refreshTokenMaxAge = 1000 * 60 * 60 * 24 * 365 * 20 // ? 20 years
 export const resetPasswordTokenMaxAge = 1000 * 60 * 60 // ? 1 hour
 export const emailVerificationTokenMaxAge = 1000 * 60 * 24 // ? 1 day
@@ -69,13 +64,11 @@ export function generateToken({ type, payload }: TokenConfig) {
   })
 }
 
-export function verifyToken(token: string) {
+export function verifyToken(token: string): UserPayload | RefreshTokenPayload | undefined {
   if (!JWT_SECRET) throw new Error('[Jsonwebtoken] Missing JWT_SECRET')
 
   try {
-    const payload = verify(token, JWT_SECRET)
-
-    return payload ? (payload as IPayload) : undefined
+    return (verify(token, JWT_SECRET) as any) || undefined
   } catch {
     return undefined
   }

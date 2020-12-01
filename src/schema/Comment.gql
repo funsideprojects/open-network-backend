@@ -70,7 +70,6 @@ type CommentsPayload {
 # ---------------------------------------------------------
 
 type Query {
-  # DONE: Get post's comments
   getComments(postId: ID!, skip: Int, limit: Int):    CommentsPayload
 }
 
@@ -79,13 +78,10 @@ type Query {
 # ---------------------------------------------------------
 
 type Mutation {
-  # DONE: Create a post comment
   createComment(input: CreateCommentInput!):          CommentPayload
 
-  # DONE: Update a post comment
   updateComment(input: UpdateCommentInput!):          Boolean
 
-  # DONE: Delete a post comment
   deleteComment(input: DeleteCommentInput!):          Boolean
 }
 

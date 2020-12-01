@@ -5,7 +5,7 @@ export interface INotification extends Document {
   type: string
   postId?: ObjectId
   comentId?: ObjectId
-  fromIds: Array<ObjectId>
+  fromId: Array<ObjectId>
   toId: ObjectId
   seen: boolean
 }
@@ -24,7 +24,7 @@ const notificationSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'Post',
     },
-    fromIds: [
+    fromId: [
       {
         type: Schema.Types.ObjectId,
         ref: 'User',
@@ -48,14 +48,8 @@ const notificationSchema = new Schema(
 
 notificationSchema.set('toObject', {
   versionKey: false,
-  transform: (doc, res) => {
-    // Delete unused field
-    delete res.__v
-
-    // Assign id
-    res.id = doc._id
-
-    return res
+  transform: ({ _id }, { __v, ...restConvertedDocument }) => {
+    return Object.assign({}, { id: _id }, restConvertedDocument)
   },
 })
 
