@@ -153,9 +153,11 @@ type Query {
 # ---------------------------------------------------------
 
 type Mutation {
+  signup(input: SignUpInput!):                                          Boolean
+
   signin(input: SignInInput!):                                          Boolean
 
-  signup(input: SignUpInput!):                                          Boolean
+  signout:                                                              Boolean @auth
 
   requestVerificationEmail:                                             Boolean @auth
 

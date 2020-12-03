@@ -59,12 +59,15 @@ export const Mutation = {
           payload: { ...user, ip: getRequestIP(req), userAgent: getRequestUserAgent(req) },
         })
         const cookieOptions: CookieOptions = {
-          httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
         }
 
         req.res.cookie(TokenTypes.Access, accessToken, { ...cookieOptions, maxAge: accessTokenMaxAge })
-        req.res.cookie(TokenTypes.Refresh, refreshToken, { ...cookieOptions, maxAge: refreshTokenMaxAge })
+        req.res.cookie(TokenTypes.Refresh, refreshToken, {
+          ...cookieOptions,
+          httpOnly: true,
+          maxAge: refreshTokenMaxAge,
+        })
       } catch (error) {
         await User.deleteOne({ _id: newUser._id })
 
@@ -78,7 +81,7 @@ export const Mutation = {
   signin: async (
     root,
     { input: { emailOrUsername, password } },
-    { User, HTTP_STATUS_CODE, ERROR_MESSAGE, req }: IContext
+    { req, User, HTTP_STATUS_CODE, ERROR_MESSAGE }: IContext
   ) => {
     // ? Throw error if express middleware failed to initialize response
     if (!req.res) {
@@ -88,7 +91,6 @@ export const Mutation = {
     const userFound = await User.findOne({
       $or: [{ email: emailOrUsername }, { username: emailOrUsername }],
     })
-    // ? User not found
     if (!userFound) {
       throw new ApolloError(`Username or password is incorrect`, HTTP_STATUS_CODE['Bad Request'])
     }
@@ -118,12 +120,23 @@ export const Mutation = {
       }
 
       req.res.cookie(TokenTypes.Access, accessToken, { ...cookieOptions, maxAge: accessTokenMaxAge })
-      req.res.cookie(TokenTypes.Refresh, refreshToken, { ...cookieOptions, maxAge: refreshTokenMaxAge })
+      req.res.cookie(TokenTypes.Refresh, refreshToken, { ...cookieOptions, httpOnly: true, maxAge: refreshTokenMaxAge })
 
       return true
     } catch (error) {
       throw new ApolloError(ERROR_MESSAGE['Internal Server Error'], HTTP_STATUS_CODE['Internal Server Error'], error)
     }
+  },
+
+  signout: async (root, args, { req, authUser, User, HTTP_STATUS_CODE, ERROR_MESSAGE }: IContext) => {
+    if (!req.res) {
+      throw new ApolloError(ERROR_MESSAGE['Internal Server Error'], HTTP_STATUS_CODE['Internal Server Error'])
+    }
+
+    req.res.clearCookie(TokenTypes.Access)
+    req.res.clearCookie(TokenTypes.Refresh)
+
+    return true
   },
 
   requestVerificationEmail: async (root, args, { authUser, User, HTTP_STATUS_CODE }: IContext) => {

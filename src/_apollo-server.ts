@@ -15,7 +15,7 @@ import { Logger, ConnectionManager } from 'services'
 import { hl } from 'utils'
 
 import { mongooseConnection, ConnectionStates } from '_mongoose'
-import { UserPayload, verifyToken } from '_jsonwebtoken'
+import { TokenTypes, UserPayload, verifyToken } from '_jsonwebtoken'
 import { serverTimezoneOffset } from 'constants/Date'
 
 // ? Interface
@@ -30,6 +30,7 @@ export interface IContext extends IModels {
 export interface ISubscriptionContext {
   authUser: UserPayload
   connectionId: string
+  req: Request
 }
 
 // ? Create pubSub instance for publishing events
@@ -49,11 +50,14 @@ export function createApolloServer(graphqlPath: string) {
     cacheControl: {
       defaultMaxAge: 0,
     },
-    playground: {
-      settings: {
-        'request.credentials': 'include',
-      },
-    },
+    playground:
+      process.env.NODE_ENV === 'development'
+        ? {
+            settings: {
+              'request.credentials': 'include',
+            },
+          }
+        : false,
     validationRules: [depthLimit(6)],
     plugins: [
       {
@@ -117,48 +121,49 @@ export function createApolloServer(graphqlPath: string) {
     subscriptions: {
       path: graphqlPath,
       onConnect: async (connectionParams, _webSocket) => {
-        if (connectionParams['authorization']) {
-          const authUser = verifyToken(connectionParams['authorization'])
-
-          // ? Throw error if token is invalid
-          if (!authUser) {
-            throw new ApolloError('Unauthorized', HTTP_STATUS_CODE.Unauthorized)
-          }
-
-          const now = new Date(Date.now() + serverTimezoneOffset)
-
-          // * Update connection manager
-          const connectionId = ConnectionManager.addConnection(authUser.id, 'device X')
-          const userConnections = ConnectionManager.userConnections(authUser.id).length
-
-          // todo - Create session
-          // new models.UserSession({
-          //   userId: authUser.id,
-          //   connectionId,
-          //   connectedAt: now,
-          //   userAgent: _webSocket['upgradeReq']['headers']['user-agent'],
-          // }).save(),
-
-          // ? If user have no connection at the moment
-          if (!userConnections) {
-            // * Update user status
-            await models.User.findByIdAndUpdate(authUser.id, { online: true })
-
-            // * Publish user status
-            pubSub.publish(IS_USER_ONLINE, {
-              isUserOnline: {
-                userId: authUser.id,
-                online: true,
-                lastActiveAt: now,
-              },
-            })
-          }
-
-          Logger.debug('[Apollo Server]', hl.success('[User Connected]'), authUser.id, authUser.username)
-
-          // ? Add authUser to socket's context, so we have access to it, in onDisconnect method
-          return { authUser, connectionId }
+        if (!connectionParams || !connectionParams[TokenTypes.Access]) {
+          throw new ApolloError('Unauthorized', HTTP_STATUS_CODE.Unauthorized)
         }
+        const authUser = verifyToken(connectionParams[TokenTypes.Access])
+
+        // ? Throw error if token is invalid
+        if (!authUser) {
+          throw new ApolloError('Unauthorized', HTTP_STATUS_CODE.Unauthorized)
+        }
+
+        const now = new Date(Date.now() + serverTimezoneOffset)
+
+        // * Update connection manager
+        const connectionId = ConnectionManager.addConnection(authUser.id, 'device X')
+        const userConnections = ConnectionManager.userConnections(authUser.id).length
+
+        // todo - Create session
+        // new models.UserSession({
+        //   userId: authUser.id,
+        //   connectionId,
+        //   connectedAt: now,
+        //   userAgent: _webSocket['upgradeReq']['headers']['user-agent'],
+        // }).save(),
+
+        // ? If user have no connection at the moment
+        if (!userConnections) {
+          // * Update user status
+          await models.User.findByIdAndUpdate(authUser.id, { online: true })
+
+          // * Publish user status
+          pubSub.publish(IS_USER_ONLINE, {
+            isUserOnline: {
+              userId: authUser.id,
+              online: true,
+              lastActiveAt: now,
+            },
+          })
+        }
+
+        Logger.debug('[Apollo Server]', hl.success('[User Connected]'), authUser.id, authUser.username)
+
+        // ? Add authUser to socket's context, so we have access to it, in onDisconnect method
+        return { authUser, connectionId }
       },
       onDisconnect: async (_webSocket, context) => {
         // * Get socket's context
