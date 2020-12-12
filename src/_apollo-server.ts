@@ -167,40 +167,45 @@ export function createApolloServer(graphqlPath: string) {
       },
       onDisconnect: async (_webSocket, context) => {
         // * Get socket's context
-        const subscriptionContext: ISubscriptionContext = await context.initPromise
-        if (subscriptionContext?.authUser && subscriptionContext?.connectionId) {
-          const { authUser, connectionId } = subscriptionContext
-          const now = new Date(Date.now() + serverTimezoneOffset)
+        if (context.initPromise) {
+          await context.initPromise
+            .then(async (subscriptionContext: ISubscriptionContext) => {
+              if (subscriptionContext?.authUser && subscriptionContext?.connectionId) {
+                const { authUser, connectionId } = subscriptionContext
+                const now = new Date(Date.now() + serverTimezoneOffset)
 
-          // * Update connection manager
-          ConnectionManager.removeConnection(authUser.id, connectionId)
-          const userConnections = ConnectionManager.userConnections(authUser.id).length
+                // * Update connection manager
+                ConnectionManager.removeConnection(authUser.id, connectionId)
+                const userConnections = ConnectionManager.userConnections(authUser.id).length
 
-          // todo - Update session
-          // await models.UserSession.findOneAndUpdate(
-          //   { connectionId: subscriptionContext.connectionId },
-          //   { $set: { disconnectedAt: now } }
-          // )
+                // todo - Update session
+                // await models.UserSession.findOneAndUpdate(
+                //   { connectionId: subscriptionContext.connectionId },
+                //   { $set: { disconnectedAt: now } }
+                // )
 
-          // ? If there's no remaining connection left
-          if (!userConnections) {
-            // * Update user status and lastActiveAt
-            await models.User.findByIdAndUpdate(authUser.id, {
-              online: false,
-              lastActiveAt: now,
+                // ? If there's no remaining connection left
+                if (!userConnections) {
+                  // * Update user status and lastActiveAt
+                  await models.User.findByIdAndUpdate(authUser.id, {
+                    online: false,
+                    lastActiveAt: now,
+                  })
+
+                  // * Publish user status
+                  await pubSub.publish(IS_USER_ONLINE, {
+                    isUserOnline: {
+                      userId: authUser.id,
+                      online: false,
+                      lastActiveAt: now,
+                    },
+                  })
+                }
+
+                Logger.debug('[Apollo Server]', hl.error('[User Disconnected]'), authUser.id, authUser.username)
+              }
             })
-
-            // * Publish user status
-            await pubSub.publish(IS_USER_ONLINE, {
-              isUserOnline: {
-                userId: authUser.id,
-                online: false,
-                lastActiveAt: now,
-              },
-            })
-          }
-
-          Logger.debug('[Apollo Server]', hl.error('[User Disconnected]'), authUser.id, authUser.username)
+            .catch(() => {})
         }
       },
     },

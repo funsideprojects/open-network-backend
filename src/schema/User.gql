@@ -143,7 +143,7 @@ type Query {
   # Search users by username or fullName
   searchUsers(searchQuery: String!, skip: Int!, limit: Int!):           UsersPayload @auth
 
-  suggestUsers:                                                        [UserPayload] @auth
+  suggestUsers(except: [ID]):                                          [UserPayload] @auth
 
   verifyToken(token: String!):                                          Boolean
 }

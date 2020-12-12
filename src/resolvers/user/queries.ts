@@ -128,29 +128,25 @@ export const Query = {
     return result
   },
 
-  suggestUsers: async (root, args, { authUser, User, Follow }: IContext) => {
+  suggestUsers: async (root, { except }, { authUser, User, Follow }: IContext) => {
     const SUGGESTION_LIMIT = 5
 
     // ? Find users who authUser is following
     const following = await Follow.find({ '_id.followerId': authUser!.id })
 
     // ? Find random users except users that authUser is following
-    const query = {
-      $and: [{ _id: { $nin: [...following.map(({ _id }) => _id.userId), authUser!.id] } }, { visibleToEveryone: true }],
-    }
-
-    const usersCount = await User.countDocuments(query)
-    let random = ~~(Math.random() * usersCount)
-
-    const usersLeft = usersCount - random
-    if (usersLeft < SUGGESTION_LIMIT) {
-      random = random - (SUGGESTION_LIMIT - usersLeft)
-      if (random < 0) random = 0
-    }
-
-    const randomUsers = await User.find(query).skip(random).limit(SUGGESTION_LIMIT)
-
-    return randomUsers.sort(() => Math.random() - 0.5)
+    return await User.aggregate([
+      {
+        $match: {
+          $and: [
+            { _id: { $nin: [...except, ...following.map(({ _id }) => _id.userId), authUser!.id] } },
+            { visibleToEveryone: true },
+          ],
+        },
+      },
+      { $sample: { size: SUGGESTION_LIMIT } },
+      { $set: { id: '$_id' } },
+    ])
   },
 
   // ? Check if user exists and token is valid
