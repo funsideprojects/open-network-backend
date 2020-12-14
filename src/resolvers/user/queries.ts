@@ -1,5 +1,6 @@
 import { GraphQLResolveInfo } from 'graphql'
 import { ApolloError } from 'apollo-server'
+import { Types } from 'mongoose'
 
 import { getRequestedFieldsFromInfo } from 'resolvers/functions'
 
@@ -139,7 +140,15 @@ export const Query = {
       {
         $match: {
           $and: [
-            { _id: { $nin: [...except, ...following.map(({ _id }) => _id.userId), authUser!.id] } },
+            {
+              _id: {
+                $nin: [
+                  ...except.map((id) => Types.ObjectId(id)),
+                  ...following.map(({ _id }) => _id.userId),
+                  Types.ObjectId(authUser!.id),
+                ],
+              },
+            },
             { visibleToEveryone: true },
           ],
         },

@@ -7,7 +7,7 @@ type Notification {
   type:               NotificationType!
   postId:             ID
   commentId:          ID
-  fromIds:           [ID]
+  fromId:             ID
   toId:               ID!
   seen:               Boolean!
 
@@ -21,7 +21,7 @@ type Notification {
 
 input UpdateNotificationSeenInput {
   ids:               [ID]
-  seenAll:            Boolean
+  all:                Boolean
 }
 
 input DeleteNotificationInput {
@@ -29,7 +29,7 @@ input DeleteNotificationInput {
 }
 
 # ---------------------------------------------------------
-# * Return Payloads
+# * Response Payloads
 # ---------------------------------------------------------
 
 enum NotificationType {
@@ -69,7 +69,7 @@ type NotificationsPayload {
 type NotificationUpdatedPayload {
   operation:          NotificationOperationType
   type:               NotificationType
-  dataId:             ID
+  data:               String
   from:               UserPayload
 }
 
@@ -78,7 +78,7 @@ type NotificationUpdatedPayload {
 # ---------------------------------------------------------
 
 type Query {
-  getNotifications(skip: Int!, limit: Int!):                        NotificationsPayload @auth
+  getNotifications(skip: Int!, limit: Int!):                      NotificationsPayload @auth
 }
 
 # ---------------------------------------------------------

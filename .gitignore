@@ -18,3 +18,11 @@ yarn-error.log*
 build
 logs
 uploads
+
+# Yarn
+.yarn/*
+!.yarn/cache
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions

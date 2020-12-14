@@ -1,6 +1,11 @@
 # ---------------------------------------------------------
-# *_: Model Objects
+# * Model Objects
 # ---------------------------------------------------------
+
+type FollowID {
+  userId:         ID!
+  followerId:     ID!
+}
 
 type Follow {
   _id:            FollowID!
@@ -9,21 +14,24 @@ type Follow {
   updatedAt:      String!
 }
 
-type FollowID {
-  userId:         ID!
-  followerId:     ID!
-}
 
 # ---------------------------------------------------------
-# *_: Input Objects
+# * Input Objects
 # ---------------------------------------------------------
+
+input GetFollowingOrFollowerInput {
+  username: String!
+  idOnly: Boolean
+  skip: Int
+  limit: Int
+}
 
 input CreateOrDeleteFollowInput {
   userId:         ID!
 }
 
 # ---------------------------------------------------------
-# *_: Return Payloads
+# * Response Payloads
 # ---------------------------------------------------------
 
 type FollowerOrFollowingPayload {
@@ -32,28 +40,24 @@ type FollowerOrFollowingPayload {
 }
 
 # ---------------------------------------------------------
-# *_: Queries
+# * Queries
 # ---------------------------------------------------------
 
 type Query {
-  # DONE: Get follows made by user
-  getFollowedUsers(username: String, skip: Int, limit: Int):          FollowerOrFollowingPayload
+  getFollowings(input: GetFollowingOrFollowerInput!):     FollowerOrFollowingPayload @auth(optional: true)
 
-  # DONE: Get user's followers
-  getUserFollowers(username: String, skip: Int, limit: Int):          FollowerOrFollowingPayload
+  getFollowers(input: GetFollowingOrFollowerInput!):      FollowerOrFollowingPayload @auth(optional: true)
 }
 
 # ---------------------------------------------------------
-# *_: Mutations
+# * Mutations
 # ---------------------------------------------------------
 type Mutation {
-  # DONE: Create a following/follower relationship between users
-  createFollow(input: CreateOrDeleteFollowInput!):      Boolean
+  createFollow(input: CreateOrDeleteFollowInput!):        Boolean @auth
 
-  # DONE: Delete a following/follower relationship between users
-  deleteFollow(input: CreateOrDeleteFollowInput!):      Boolean
+  deleteFollow(input: CreateOrDeleteFollowInput!):        Boolean @auth
 }
 
 # ---------------------------------------------------------
-# *_: Subscriptions
+# * Subscriptions
 # ---------------------------------------------------------

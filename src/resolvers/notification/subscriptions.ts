@@ -8,7 +8,7 @@ export enum NotiPubsubOperation {
   Create = 'CREATE',
   Delete = 'DELETE',
 }
-export enum NotiPubsubType {
+export enum NotificationType {
   Comment = 'COMMENT',
   Follow = 'FOLLOW',
   Like = 'LIKE',
@@ -16,8 +16,8 @@ export enum NotiPubsubType {
 }
 type NotificationPayload = {
   operation: NotiPubsubOperation
-  type: NotiPubsubType
-  dataId?: string
+  type: NotificationType
+  data?: string
   from?: any
   recipients: Array<string>
 }

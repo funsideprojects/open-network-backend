@@ -72,7 +72,7 @@ input UpdateUserPhotoInput {
 }
 
 # ---------------------------------------------------------
-# * Return Payloads
+# * Response Payloads
 # ---------------------------------------------------------
 
 type AuthUserPayload {

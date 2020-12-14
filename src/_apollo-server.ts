@@ -3,8 +3,8 @@ import { Request } from 'express'
 import { PubSub } from 'apollo-server'
 import * as depthLimit from 'graphql-depth-limit'
 import { ApolloServer, ApolloError } from 'apollo-server-express'
-import { fileLoader, mergeTypes } from 'merge-graphql-schemas'
-import 'apollo-cache-control'
+import { mergeTypeDefs } from '@graphql-tools/merge'
+import { loadFilesSync } from '@graphql-tools/load-files'
 
 import { HTTP_STATUS_CODE, ERROR_MESSAGE } from 'constants/Errors'
 import { IS_USER_ONLINE } from 'constants/Subscriptions'
@@ -37,7 +37,7 @@ export interface ISubscriptionContext {
 export const pubSub = new PubSub()
 
 // ? Merge Graphql schema
-const typeDefs = mergeTypes(fileLoader(join(__dirname, `/schema/**/*.gql`)), { all: true })
+const typeDefs = mergeTypeDefs(loadFilesSync(join(__dirname, `/schema/**/*.gql`)))
 
 export function createApolloServer(graphqlPath: string) {
   return new ApolloServer({

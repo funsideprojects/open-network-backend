@@ -1,5 +1,5 @@
 import { Document, Schema, model } from 'mongoose'
-import { hashSync, compareSync } from 'bcryptjs'
+import { hashSync } from 'bcryptjs'
 
 import { serverTimezoneOffset } from 'constants/Date'
 import { fullNameRegex, emailRegex, usernameRegex, passwordRegex } from 'constants/RegExr'

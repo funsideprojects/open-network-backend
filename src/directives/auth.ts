@@ -2,14 +2,7 @@ import { SchemaDirectiveVisitor, ApolloError } from 'apollo-server'
 import { GraphQLField, defaultFieldResolver } from 'graphql'
 
 import { IContext } from '_apollo-server'
-import {
-  TokenTypes,
-  UserPayload,
-  RefreshTokenPayload,
-  verifyToken,
-  generateToken,
-  accessTokenMaxAge,
-} from '_jsonwebtoken'
+import { TokenTypes, UserPayload, verifyToken, generateToken, accessTokenMaxAge } from '_jsonwebtoken'
 
 export class AuthDirective extends SchemaDirectiveVisitor {
   public visitFieldDefinition(field: GraphQLField<any, any>) {

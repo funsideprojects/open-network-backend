@@ -4,8 +4,8 @@ import { ObjectId } from 'mongodb'
 export interface INotification extends Document {
   type: string
   postId?: ObjectId
-  comentId?: ObjectId
-  fromId: Array<ObjectId>
+  commentId?: ObjectId
+  fromId: ObjectId
   toId: ObjectId
   seen: boolean
 }
@@ -24,12 +24,10 @@ const notificationSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'Post',
     },
-    fromId: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-      },
-    ],
+    fromId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
     toId: {
       type: Schema.Types.ObjectId,
       required: true,
