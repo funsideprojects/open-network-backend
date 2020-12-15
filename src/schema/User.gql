@@ -179,5 +179,5 @@ type Mutation {
 # ---------------------------------------------------------
 
 type Subscription {
-  isUserOnline(userId: ID!):                                  IsUserOnlinePayload
+  isUserOnline(userId: ID!):                                            IsUserOnlinePayload
 }
