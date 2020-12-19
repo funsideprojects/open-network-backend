@@ -41,7 +41,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@graphql-tools/merge", "virtual:595e2a1ba4e09501d1380981a2d89a1107f02572ccc3dad109e09784a2f0529d103e91eea553d8fbe5f973edb0a706aca3f78d9fea3882a31611a7eabaa31960#npm:6.2.6"],
             ["@types/bcryptjs", "npm:2.4.2"],
             ["@types/cookie-parser", "npm:1.4.2"],
-            ["@types/cors", "npm:2.8.9"],
             ["@types/jsonwebtoken", "npm:8.5.0"],
             ["@types/mkdirp", "npm:1.0.1"],
             ["@types/mongodb", "npm:3.6.3"],
@@ -55,7 +54,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["chalk", "npm:4.1.0"],
             ["cloudinary", "npm:1.23.0"],
             ["cookie-parser", "npm:1.4.5"],
-            ["cors", "npm:2.8.5"],
             ["dotenv", "npm:8.2.0"],
             ["express", "npm:4.17.1"],
             ["graphql", "npm:15.4.0"],
@@ -2067,13 +2065,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageDependencies": [
             ["@types/cors", "npm:2.8.8"],
             ["@types/express", "npm:4.17.9"]
-          ],
-          "linkType": "HARD",
-        }],
-        ["npm:2.8.9", {
-          "packageLocation": "./.yarn/cache/@types-cors-npm-2.8.9-758483771f-903e863c91.zip/node_modules/@types/cors/",
-          "packageDependencies": [
-            ["@types/cors", "npm:2.8.9"]
           ],
           "linkType": "HARD",
         }]
@@ -7471,7 +7462,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@graphql-tools/merge", "virtual:595e2a1ba4e09501d1380981a2d89a1107f02572ccc3dad109e09784a2f0529d103e91eea553d8fbe5f973edb0a706aca3f78d9fea3882a31611a7eabaa31960#npm:6.2.6"],
             ["@types/bcryptjs", "npm:2.4.2"],
             ["@types/cookie-parser", "npm:1.4.2"],
-            ["@types/cors", "npm:2.8.9"],
             ["@types/jsonwebtoken", "npm:8.5.0"],
             ["@types/mkdirp", "npm:1.0.1"],
             ["@types/mongodb", "npm:3.6.3"],
@@ -7485,7 +7475,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["chalk", "npm:4.1.0"],
             ["cloudinary", "npm:1.23.0"],
             ["cookie-parser", "npm:1.4.5"],
-            ["cors", "npm:2.8.5"],
             ["dotenv", "npm:8.2.0"],
             ["express", "npm:4.17.1"],
             ["graphql", "npm:15.4.0"],

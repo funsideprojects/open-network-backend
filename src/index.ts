@@ -1,6 +1,5 @@
 import 'dotenv/config'
 import * as express from 'express'
-import * as cors from 'cors'
 import { createServer } from 'http'
 import * as cookieParser from 'cookie-parser'
 // import * as cluster from 'cluster'
@@ -33,11 +32,6 @@ async function main() {
     app.use(express.static('uploads'))
   }
 
-  // ? CORS
-  if (process.env.CORS_ORIGIN) {
-    app.use(cors({ origin: process.env.CORS_ORIGIN.split(','), credentials: true }))
-  }
-
   // ? Cookie
   app.use(cookieParser())
 
@@ -47,7 +41,14 @@ async function main() {
   // ? Apollo Server
   const graphqlPath = '/gql'
   const apolloServer = createApolloServer(graphqlPath)
-  apolloServer.applyMiddleware({ app, path: graphqlPath, cors: false })
+  apolloServer.applyMiddleware({
+    app,
+    path: graphqlPath,
+    cors: {
+      credentials: true,
+      origin: process.env.CORS_ORIGIN ?? true,
+    },
+  })
 
   // ? Start
   // const numCPUs = cpus().length
