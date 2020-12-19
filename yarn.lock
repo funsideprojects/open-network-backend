@@ -5012,6 +5012,52 @@ fsevents@~2.1.2:
   languageName: node
   linkType: hard
 
+"open-network-backend@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "open-network-backend@workspace:."
+  dependencies:
+    "@graphql-tools/load-files": ^6.2.5
+    "@graphql-tools/merge": 6.2.6
+    "@types/bcryptjs": 2.4.2
+    "@types/cookie-parser": 1.4.2
+    "@types/jsonwebtoken": 8.5.0
+    "@types/mkdirp": 1.0.1
+    "@types/mongodb": 3.6.3
+    "@types/mongoose": 5.7.36
+    "@types/node": 14.14.13
+    "@types/nodemailer": 6.4.0
+    "@types/uuid": 8.3.0
+    apollo-server: 2.19.0
+    apollo-server-express: 2.19.0
+    bcryptjs: 2.4.3
+    chalk: 4.1.0
+    cloudinary: 1.23.0
+    cookie-parser: 1.4.5
+    dotenv: 8.2.0
+    express: 4.17.1
+    graphql: 15.4.0
+    graphql-depth-limit: 1.1.0
+    graphql-resolvers: 0.4.2
+    graphql-tools: 7.0.2
+    jsonwebtoken: 8.5.1
+    mkdirp: 1.0.4
+    mnemonist: 0.38.1
+    mongoose: 5.11.7
+    ncp: 2.0.0
+    nodemailer: 6.4.17
+    nodemon: 2.0.6
+    prettier: 2.2.1
+    rimraf: 3.0.2
+    subscriptions-transport-ws: 0.9.18
+    ts-node: 9.1.1
+    tsconfig-paths: 3.9.0
+    tslint: 6.1.3
+    tslint-plugin-prettier: 2.3.0
+    typescript: 4.1.3
+    uuid: 8.3.2
+  languageName: unknown
+  linkType: soft
+
 "optimism@npm:^0.13.1":
   version: 0.13.1
   resolution: "optimism@npm:0.13.1"
@@ -5740,52 +5786,6 @@ resolve@^1.3.2:
   checksum: af6bd9d9116298828d84a0c4ad417f941c61b72ed16cc289b97ad3669c2c41d13763b79385f3ac44c40a1e82f8c0774d18587b3b7125034fa6f80d10363a234c
   languageName: node
   linkType: hard
-
-"social-network-backend@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "social-network-backend@workspace:."
-  dependencies:
-    "@graphql-tools/load-files": ^6.2.5
-    "@graphql-tools/merge": 6.2.6
-    "@types/bcryptjs": 2.4.2
-    "@types/cookie-parser": 1.4.2
-    "@types/jsonwebtoken": 8.5.0
-    "@types/mkdirp": 1.0.1
-    "@types/mongodb": 3.6.3
-    "@types/mongoose": 5.7.36
-    "@types/node": 14.14.13
-    "@types/nodemailer": 6.4.0
-    "@types/uuid": 8.3.0
-    apollo-server: 2.19.0
-    apollo-server-express: 2.19.0
-    bcryptjs: 2.4.3
-    chalk: 4.1.0
-    cloudinary: 1.23.0
-    cookie-parser: 1.4.5
-    dotenv: 8.2.0
-    express: 4.17.1
-    graphql: 15.4.0
-    graphql-depth-limit: 1.1.0
-    graphql-resolvers: 0.4.2
-    graphql-tools: 7.0.2
-    jsonwebtoken: 8.5.1
-    mkdirp: 1.0.4
-    mnemonist: 0.38.1
-    mongoose: 5.11.7
-    ncp: 2.0.0
-    nodemailer: 6.4.17
-    nodemon: 2.0.6
-    prettier: 2.2.1
-    rimraf: 3.0.2
-    subscriptions-transport-ws: 0.9.18
-    ts-node: 9.1.1
-    tsconfig-paths: 3.9.0
-    tslint: 6.1.3
-    tslint-plugin-prettier: 2.3.0
-    typescript: 4.1.3
-    uuid: 8.3.2
-  languageName: unknown
-  linkType: soft
 
 "source-map-support@npm:^0.5.17":
   version: 0.5.19
