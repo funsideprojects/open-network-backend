@@ -131,11 +131,8 @@ export const Query = {
 
   suggestUsers: async (root, { except }, { authUser, User, Follow }: IContext) => {
     const SUGGESTION_LIMIT = 5
+    const followings = await Follow.find({ '_id.followerId': authUser!.id })
 
-    // ? Find users who authUser is following
-    const following = await Follow.find({ '_id.followerId': authUser!.id })
-
-    // ? Find random users except users that authUser is following
     return await User.aggregate([
       {
         $match: {
@@ -144,7 +141,7 @@ export const Query = {
               _id: {
                 $nin: [
                   ...except.map((id) => Types.ObjectId(id)),
-                  ...following.map(({ _id }) => _id.userId),
+                  ...followings.map(({ _id }) => _id.userId),
                   Types.ObjectId(authUser!.id),
                 ],
               },
