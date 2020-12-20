@@ -9,6 +9,7 @@
     ],
     "moduleResolution": "node",
     "strict": true,
+    "strictNullChecks": false,
     "strictPropertyInitialization": false,
     "declaration": false,
     "noImplicitAny": false,

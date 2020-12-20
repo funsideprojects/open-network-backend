@@ -9,7 +9,7 @@ export enum TokenTypes {
 }
 
 export type UserPayload = {
-  id: string
+  id?: string
   username: string
   fullName: string
 }
@@ -42,6 +42,7 @@ type EmailVerification = {
 type TokenConfig = AccessToken | RefreshToken | ResetPasswordToken | EmailVerification
 export interface IPayload extends UserPayload, RefreshTokenPayload {}
 
+// ? Constants
 export const accessTokenMaxAge = 1000 * 60 * 10 // ? 10 mins
 export const refreshTokenMaxAge = 1000 * 60 * 60 * 24 * 365 * 20 // ? 20 years
 export const resetPasswordTokenMaxAge = 1000 * 60 * 60 // ? 1 hour

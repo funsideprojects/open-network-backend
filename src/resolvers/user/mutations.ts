@@ -115,7 +115,6 @@ export const Mutation = {
         payload: { ...user, ip: getRequestIP(req), userAgent: getRequestUserAgent(req) },
       })
       const cookieOptions: CookieOptions = {
-        httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
       }
 
@@ -283,7 +282,7 @@ export const Mutation = {
 
   updateUserInfo: async (
     root,
-    { input: { email, fullName, visibleToEveryone, displayOnlineStatus } },
+    { input: { email, fullName, statusQuote, visibleToEveryone, displayOnlineStatus } },
     { authUser, User, HTTP_STATUS_CODE }: IContext
   ) => {
     const userFound = await User.findById(authUser!.id)
@@ -293,6 +292,7 @@ export const Mutation = {
 
     userFound.email = email
     userFound.fullName = fullName
+    userFound.statusQuote = statusQuote
     userFound.visibleToEveryone = visibleToEveryone
     userFound.displayOnlineStatus = displayOnlineStatus
 

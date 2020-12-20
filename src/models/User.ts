@@ -16,6 +16,7 @@ export interface IUser extends Document {
   imagePublicId?: string
   coverImage?: string
   coverImagePublicId?: string
+  statusQuote?: string
   visibleToEveryone: boolean
   online: boolean
   displayOnlineStatus: boolean
@@ -80,6 +81,10 @@ const userSchema = new Schema(
     imagePublicId: String,
     coverImage: String,
     coverImagePublicId: String,
+    statusQuote: {
+      type: String,
+      default: '',
+    },
     visibleToEveryone: {
       type: Boolean,
       required: true,
@@ -137,6 +142,14 @@ userSchema.pre<IUser>('save', function (next) {
 
   if (modifiedPaths.indexOf('email') > -1) {
     Object.assign(this, { emailVerificationToken: undefined, emailVerified: false })
+  }
+
+  next()
+})
+
+userSchema.post<IUser>('findOne', (doc, next) => {
+  if (!doc.displayOnlineStatus) {
+    doc.online = false
   }
 
   next()

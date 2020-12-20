@@ -17,6 +17,11 @@ export const Query = {
       throw new ApolloError('Unauthorized', HTTP_STATUS_CODE.Unauthorized)
     }
 
+    // ! Manually handled due to this query get fired before the onConnect event
+    if (userFound.displayOnlineStatus) {
+      userFound.online = true
+    }
+
     return userFound
   },
 
@@ -96,20 +101,18 @@ export const Query = {
     const followingIds = following.map(({ _id }) => _id.userId)
 
     // ? Query object
+    const regex = new RegExp(searchQuery, 'i')
     const query = {
       $and: [
         {
           $or: [
             {
-              $and: [
-                { _id: { $in: followingIds } },
-                { $or: [{ username: new RegExp(searchQuery, 'i') }, { fullName: new RegExp(searchQuery, 'i') }] },
-              ],
+              $and: [{ _id: { $in: followingIds } }, { $or: [{ username: regex }, { fullName: regex }] }],
             },
             {
               $and: [
                 { $and: [{ _id: { $nin: followingIds } }, { visibleToEveryone: true }] },
-                { $or: [{ username: new RegExp(searchQuery, 'i') }, { fullName: new RegExp(searchQuery, 'i') }] },
+                { $or: [{ username: regex }, { fullName: regex }] },
               ],
             },
           ],
@@ -129,7 +132,7 @@ export const Query = {
     return result
   },
 
-  suggestUsers: async (root, { except }, { authUser, User, Follow }: IContext) => {
+  suggestUsers: async (root, { except = [] }, { authUser, User, Follow }: IContext) => {
     const SUGGESTION_LIMIT = 5
     const followings = await Follow.find({ '_id.followerId': authUser!.id })
 

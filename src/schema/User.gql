@@ -14,6 +14,7 @@ type User {
   imagePublicId:              String
   coverImage:                 String
   coverImagePublicId:         String
+  statusQuote:                String
   visibleToEveryone:          Boolean!
   online:                     Boolean!
   displayOnlineStatus:        Boolean!
@@ -62,6 +63,7 @@ input UpdateUserPasswordInput {
 input UpdateUserInfoInput {
   email:                      String
   fullName:                   String
+  statusQuote:                String
   visibleToEveryone:          Boolean
   displayOnlineStatus:        Boolean
 }
@@ -85,6 +87,7 @@ type AuthUserPayload {
   imagePublicId:              String
   coverImage:                 String
   coverImagePublicId:         String
+  statusQuote:                String
   visibleToEveryone:          Boolean       # Private, For authUser only
   online:                     Boolean
   displayOnlineStatus:        Boolean       # Private, For authUser only
@@ -103,6 +106,7 @@ type UserPayload {
   imagePublicId:              String
   coverImage:                 String
   coverImagePublicId:         String
+  statusQuote:                String
   online:                     Boolean
   lastActiveAt:               Float
 
@@ -118,13 +122,6 @@ type IsUserOnlinePayload {
   userId:                     ID
   online:                     Boolean
   lastActiveAt:               Float
-}
-
-type UpdateUserPhotoResponse {
-  image:                      String
-  imagePublicId:              String
-  coverImage:                 String
-  coverImagePublicId:         String
 }
 
 # ---------------------------------------------------------
@@ -171,7 +168,7 @@ type Mutation {
 
   updateUserInfo(input: UpdateUserInfoInput!):                          AuthUserPayload @auth
 
-  updateUserPhoto(input: UpdateUserPhotoInput!):                        UpdateUserPhotoResponse @auth
+  updateUserPhoto(input: UpdateUserPhotoInput!):                        AuthUserPayload @auth
 }
 
 # ---------------------------------------------------------

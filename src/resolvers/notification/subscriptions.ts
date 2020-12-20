@@ -22,9 +22,9 @@ type NotificationPayload = {
   recipients: Array<string>
 }
 
-export function pubsubNotification(notiPayload: NotificationPayload) {
+export function pubsubNotification(payload: NotificationPayload) {
   pubSub.publish(NOTIFICATION_UPDATED, {
-    notificationUpdated: notiPayload,
+    notificationUpdated: payload,
   })
 }
 

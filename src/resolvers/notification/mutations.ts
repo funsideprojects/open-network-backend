@@ -2,7 +2,7 @@ import { Types } from 'mongoose'
 
 import { IContext } from '_apollo-server'
 
-import { NotiPubsubOperation, NotiPubsubType, pubsubNotification } from './subscriptions'
+import { NotiPubsubOperation, NotificationType, pubsubNotification } from './subscriptions'
 
 export const Mutation = {
   updateNotificationSeen: async (root, { input: { ids, seenAll } }, { authUser, Notification }: IContext) => {
@@ -25,7 +25,7 @@ export const Mutation = {
       if (updateResult?.nModified) {
         pubsubNotification({
           operation: NotiPubsubOperation.Create,
-          type: NotiPubsubType.Notification,
+          type: NotificationType.Notification,
           recipients: [authUser!.id],
         })
       }
@@ -42,7 +42,7 @@ export const Mutation = {
       if (deleteResult.deletedCount) {
         pubsubNotification({
           operation: NotiPubsubOperation.Delete,
-          type: NotiPubsubType.Notification,
+          type: NotificationType.Notification,
           recipients: [authUser!.id],
         })
       }

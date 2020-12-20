@@ -120,6 +120,7 @@ export function createApolloServer(graphqlPath: string) {
     },
     subscriptions: {
       path: graphqlPath,
+      keepAlive: 20 * 1000, // ? 20 secs
       onConnect: async (connectionParams, _webSocket) => {
         if (!connectionParams || !connectionParams[TokenTypes.Access]) {
           throw new ApolloError('Unauthorized', HTTP_STATUS_CODE.Unauthorized)
@@ -136,6 +137,7 @@ export function createApolloServer(graphqlPath: string) {
         // * Update connection manager
         const connectionId = ConnectionManager.addConnection(authUser.id, 'device X')
         const userConnections = ConnectionManager.userConnections(authUser.id).length
+        console.log('createApolloServer -> userConnections', userConnections)
 
         // todo - Create session
         // new models.UserSession({
@@ -146,7 +148,7 @@ export function createApolloServer(graphqlPath: string) {
         // }).save(),
 
         // ? If user have no connection at the moment
-        if (!userConnections) {
+        if (userConnections <= 1) {
           // * Update user status
           await models.User.findByIdAndUpdate(authUser.id, { online: true })
 

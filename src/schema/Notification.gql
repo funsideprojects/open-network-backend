@@ -96,5 +96,5 @@ type Mutation {
 # ---------------------------------------------------------
 
 type Subscription {
-  notificationUpdated:                                            NotificationUpdatedPayload @auth
+  notificationUpdated:                                            NotificationUpdatedPayload
 }
