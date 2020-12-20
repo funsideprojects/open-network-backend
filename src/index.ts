@@ -1,8 +1,8 @@
 import 'dotenv/config'
-import * as express from 'express'
+import express from 'express'
 import { createServer } from 'http'
-import * as cookieParser from 'cookie-parser'
-// import * as cluster from 'cluster'
+import cookieParser from 'cookie-parser'
+// import cluster from 'cluster'
 // import { cpus } from 'os'
 
 import { User } from 'models'

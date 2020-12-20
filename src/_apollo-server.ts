@@ -1,7 +1,7 @@
 import { join } from 'path'
 import { Request } from 'express'
 import { PubSub } from 'apollo-server'
-import * as depthLimit from 'graphql-depth-limit'
+import depthLimit from 'graphql-depth-limit'
 import { ApolloServer, ApolloError } from 'apollo-server-express'
 import { mergeTypeDefs } from '@graphql-tools/merge'
 import { loadFilesSync } from '@graphql-tools/load-files'

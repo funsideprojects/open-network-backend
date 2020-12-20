@@ -127,7 +127,7 @@ export const Mutation = {
     }
   },
 
-  signout: async (root, args, { req, authUser, User, HTTP_STATUS_CODE, ERROR_MESSAGE }: IContext) => {
+  signout: async (root, args, { req, HTTP_STATUS_CODE, ERROR_MESSAGE }: IContext) => {
     if (!req.res) {
       throw new ApolloError(ERROR_MESSAGE['Internal Server Error'], HTTP_STATUS_CODE['Internal Server Error'])
     }

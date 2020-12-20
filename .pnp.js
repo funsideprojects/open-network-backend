@@ -43,6 +43,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@types/cookie-parser", "npm:1.4.2"],
             ["@types/graphql-upload", "npm:8.0.4"],
             ["@types/jsonwebtoken", "npm:8.5.0"],
+            ["@types/lodash", "npm:4.14.165"],
             ["@types/mkdirp", "npm:1.0.1"],
             ["@types/mongodb", "npm:3.6.3"],
             ["@types/mongoose", "npm:5.7.37"],
@@ -62,6 +63,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["graphql-resolvers", "npm:0.4.2"],
             ["graphql-tools", "virtual:f9e64c7523d4c7bad3541eb8a738b46e89146761856cd56d5e6239055755fbf53e5e80d48a68dffb95eba492155336c6ebb236ba05ba1fef521b994bdf19fd8a#npm:7.0.2"],
             ["jsonwebtoken", "npm:8.5.1"],
+            ["lodash", "npm:4.17.20"],
             ["mkdirp", "npm:1.0.4"],
             ["mnemonist", "npm:0.38.1"],
             ["mongoose", "npm:5.9.4"],
@@ -2218,6 +2220,15 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageDependencies": [
             ["@types/koa-compose", "npm:3.2.5"],
             ["@types/koa", "npm:2.11.6"]
+          ],
+          "linkType": "HARD",
+        }]
+      ]],
+      ["@types/lodash", [
+        ["npm:4.14.165", {
+          "packageLocation": "./.yarn/cache/@types-lodash-npm-4.14.165-fad4191e95-525bfc34b0.zip/node_modules/@types/lodash/",
+          "packageDependencies": [
+            ["@types/lodash", "npm:4.14.165"]
           ],
           "linkType": "HARD",
         }]
@@ -6624,6 +6635,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@types/cookie-parser", "npm:1.4.2"],
             ["@types/graphql-upload", "npm:8.0.4"],
             ["@types/jsonwebtoken", "npm:8.5.0"],
+            ["@types/lodash", "npm:4.14.165"],
             ["@types/mkdirp", "npm:1.0.1"],
             ["@types/mongodb", "npm:3.6.3"],
             ["@types/mongoose", "npm:5.7.37"],
@@ -6643,6 +6655,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["graphql-resolvers", "npm:0.4.2"],
             ["graphql-tools", "virtual:f9e64c7523d4c7bad3541eb8a738b46e89146761856cd56d5e6239055755fbf53e5e80d48a68dffb95eba492155336c6ebb236ba05ba1fef521b994bdf19fd8a#npm:7.0.2"],
             ["jsonwebtoken", "npm:8.5.1"],
+            ["lodash", "npm:4.17.20"],
             ["mkdirp", "npm:1.0.4"],
             ["mnemonist", "npm:0.38.1"],
             ["mongoose", "npm:5.9.4"],

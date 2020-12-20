@@ -1,5 +1,6 @@
 import { Document, Schema, model } from 'mongoose'
 import { hashSync } from 'bcryptjs'
+import forEach from 'lodash/forEach'
 
 import { serverTimezoneOffset } from 'constants/Date'
 import { fullNameRegex, emailRegex, usernameRegex, passwordRegex } from 'constants/RegExr'
@@ -151,6 +152,16 @@ userSchema.post<IUser>('findOne', (doc, next) => {
   if (!doc.displayOnlineStatus) {
     doc.online = false
   }
+
+  next()
+})
+
+userSchema.post('find', (docs: Array<IUser>, next) => {
+  forEach(docs, function (doc) {
+    if (!doc.displayOnlineStatus) {
+      doc.online = false
+    }
+  })
 
   next()
 })

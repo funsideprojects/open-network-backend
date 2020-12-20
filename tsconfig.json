@@ -8,6 +8,7 @@
       "esnext.asynciterable"
     ],
     "moduleResolution": "node",
+    "esModuleInterop": true,
     "strict": true,
     "strictNullChecks": false,
     "strictPropertyInitialization": false,

@@ -17,7 +17,8 @@ export const Query = {
       throw new ApolloError('Unauthorized', HTTP_STATUS_CODE.Unauthorized)
     }
 
-    // ! Manually handled due to this query get fired before the onConnect event
+    // ! Manually handled due to this query always get fired before the onConnect event
+    // ! that contain update function
     if (userFound.displayOnlineStatus) {
       userFound.online = true
     }
@@ -154,7 +155,12 @@ export const Query = {
         },
       },
       { $sample: { size: SUGGESTION_LIMIT } },
-      { $set: { id: '$_id' } },
+      {
+        $set: {
+          id: '$_id',
+          online: { $cond: { if: { $eq: ['$displayOnlineStatus', true] }, then: '$online', else: false } },
+        },
+      },
     ])
   },
 
