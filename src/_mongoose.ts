@@ -1,5 +1,7 @@
 import mongoose from 'mongoose'
 
+import { serverTimezoneOffset } from 'constants/Date'
+import { User } from 'models'
 import { Logger } from 'services'
 import { hl } from 'utils'
 
@@ -43,12 +45,18 @@ export async function mongooseConnect() {
     process.exit(0)
   })
 
-  return await mongoose.connect(MONGO_URL, {
-    useNewUrlParser: true,
-    useCreateIndex: true,
-    useFindAndModify: false,
-    useUnifiedTopology: true,
-    keepAlive: true,
-    keepAliveInitialDelay: 1000 * 60 * 30, // ? 30 mins
-  })
+  return await mongoose
+    .connect(MONGO_URL, {
+      useNewUrlParser: true,
+      useCreateIndex: true,
+      useFindAndModify: false,
+      useUnifiedTopology: true,
+      keepAlive: true,
+      keepAliveInitialDelay: 1000 * 60 * 30, // ? 30 mins
+    })
+    .then(async () => {
+      // ? Update all user status
+      const now = new Date(Date.now() + serverTimezoneOffset)
+      await User.updateMany({ online: true }, { $set: { online: false, lastActiveAt: new Date() } })
+    })
 }

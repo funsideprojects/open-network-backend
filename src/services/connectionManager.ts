@@ -34,7 +34,7 @@ class ConnectionManager {
       this.users[userId].push(connection)
     }
 
-    return connectionId
+    return [connectionId, this.userConnections(userId).length]
   }
 
   public removeConnection(userId: string, connectionId: string) {
@@ -46,6 +46,8 @@ class ConnectionManager {
     } else {
       this.users[userId] = this.users[userId].filter((connection) => connection.id !== connectionId)
     }
+
+    return this.userConnections(userId).length
   }
 }
 

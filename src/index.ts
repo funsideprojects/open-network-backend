@@ -5,7 +5,6 @@ import cookieParser from 'cookie-parser'
 // import cluster from 'cluster'
 // import { cpus } from 'os'
 
-import { User } from 'models'
 import { Logger, NetWorkManager } from 'services'
 import { hl } from 'utils'
 
@@ -20,9 +19,7 @@ process.on('exit', (code) => {
 
 async function main() {
   // * Connect to database
-  await mongooseConnect().then(async () => {
-    await User.updateMany({ online: true }, { $set: { online: false, lastActiveAt: new Date() } })
-  })
+  await mongooseConnect()
 
   // * Initialize application
   const app = express()

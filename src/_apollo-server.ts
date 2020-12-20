@@ -6,6 +6,7 @@ import { ApolloServer, ApolloError } from 'apollo-server-express'
 import { mergeTypeDefs } from '@graphql-tools/merge'
 import { loadFilesSync } from '@graphql-tools/load-files'
 
+import { serverTimezoneOffset } from 'constants/Date'
 import { HTTP_STATUS_CODE, ERROR_MESSAGE } from 'constants/Errors'
 import { IS_USER_ONLINE } from 'constants/Subscriptions'
 import { schemaDirectives } from 'directives'
@@ -16,7 +17,6 @@ import { hl } from 'utils'
 
 import { mongooseConnection, ConnectionStates } from '_mongoose'
 import { TokenTypes, UserPayload, verifyToken } from '_jsonwebtoken'
-import { serverTimezoneOffset } from 'constants/Date'
 
 // ? Interface
 type IModels = typeof models
@@ -135,9 +135,7 @@ export function createApolloServer(graphqlPath: string) {
         const now = new Date(Date.now() + serverTimezoneOffset)
 
         // * Update connection manager
-        const connectionId = ConnectionManager.addConnection(authUser.id, 'device X')
-        const userConnections = ConnectionManager.userConnections(authUser.id).length
-        console.log('createApolloServer -> userConnections', userConnections)
+        const [connectionId, userConnections] = ConnectionManager.addConnection(authUser.id, 'device X')
 
         // todo - Create session
         // new models.UserSession({
@@ -150,16 +148,19 @@ export function createApolloServer(graphqlPath: string) {
         // ? If user have no connection at the moment
         if (userConnections <= 1) {
           // * Update user status
-          await models.User.findByIdAndUpdate(authUser.id, { online: true })
+          const userFound = await models.User.findByIdAndUpdate(authUser.id, { online: true }, { new: true })
 
-          // * Publish user status
-          pubSub.publish(IS_USER_ONLINE, {
-            isUserOnline: {
-              userId: authUser.id,
-              online: true,
-              lastActiveAt: now,
-            },
-          })
+          // ? Only publish user online/offline status if user's displayOnlineStatus is true
+          if (userFound.displayOnlineStatus) {
+            // * Publish user status
+            pubSub.publish(IS_USER_ONLINE, {
+              isUserOnline: {
+                userId: authUser.id,
+                online: true,
+                lastActiveAt: now,
+              },
+            })
+          }
         }
 
         Logger.debug('[Apollo Server]', hl.success('[User Connected]'), authUser.id, authUser.username)
@@ -177,8 +178,7 @@ export function createApolloServer(graphqlPath: string) {
                 const now = new Date(Date.now() + serverTimezoneOffset)
 
                 // * Update connection manager
-                ConnectionManager.removeConnection(authUser.id, connectionId)
-                const userConnections = ConnectionManager.userConnections(authUser.id).length
+                const userConnections = ConnectionManager.removeConnection(authUser.id, connectionId)
 
                 // todo - Update session
                 // await models.UserSession.findOneAndUpdate(
@@ -189,19 +189,23 @@ export function createApolloServer(graphqlPath: string) {
                 // ? If there's no remaining connection left
                 if (!userConnections) {
                   // * Update user status and lastActiveAt
-                  await models.User.findByIdAndUpdate(authUser.id, {
-                    online: false,
-                    lastActiveAt: now,
-                  })
+                  const userFound = await models.User.findByIdAndUpdate(
+                    authUser.id,
+                    { online: false, lastActiveAt: now },
+                    { new: true }
+                  )
 
-                  // * Publish user status
-                  await pubSub.publish(IS_USER_ONLINE, {
-                    isUserOnline: {
-                      userId: authUser.id,
-                      online: false,
-                      lastActiveAt: now,
-                    },
-                  })
+                  // ? Only publish user online/offline status if user's displayOnlineStatus is true
+                  if (userFound.displayOnlineStatus) {
+                    // * Publish user status
+                    await pubSub.publish(IS_USER_ONLINE, {
+                      isUserOnline: {
+                        userId: authUser.id,
+                        online: false,
+                        lastActiveAt: now,
+                      },
+                    })
+                  }
                 }
 
                 Logger.debug('[Apollo Server]', hl.error('[User Disconnected]'), authUser.id, authUser.username)
