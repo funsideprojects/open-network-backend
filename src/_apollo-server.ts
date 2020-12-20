@@ -42,8 +42,8 @@ const typeDefs = mergeTypeDefs(loadFilesSync(join(__dirname, `/schema/**/*.gql`)
 export function createApolloServer(graphqlPath: string) {
   return new ApolloServer({
     uploads: {
-      maxFileSize: 5 * 1000 * 1000, // ? 5 MB
-      maxFiles: 20,
+      maxFileSize: 10 * 1000 * 1000, // ? 10 MB
+      maxFiles: 3,
     },
     typeDefs,
     resolvers,
