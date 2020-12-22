@@ -92,7 +92,7 @@ class UploadManager {
     const uploadDir = this[`${fileType}UploadDir`]
 
     try {
-      // * Delete file from file system
+      // ? Delete file from file system
       unlinkSync(`${uploadDir}/${fileAddress}`)
       Logger.debug(`[UploadManager] ${hl.success('[RemoveUploadedFile]')}`, `[${fileType}][${fileAddress}]`)
     } catch {

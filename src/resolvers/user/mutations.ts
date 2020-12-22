@@ -300,37 +300,25 @@ export const Mutation = {
   },
 
   updateUserPhoto: async (root, { input: { image, isCover } }, { authUser, User, HTTP_STATUS_CODE }: IContext) => {
-    let fieldsToUpdate: { [key: string]: string | undefined }
-
     const userFound = await User.findById(authUser!.id)
     if (!userFound) {
       throw new ApolloError('Unauthorized', HTTP_STATUS_CODE.Unauthorized)
     }
 
+    if (userFound && userFound[isCover ? 'coverImage' : 'image']) {
+      UploadManager.removeUploadedFile('image', userFound[isCover ? 'coverImage' : 'image']!)
+    }
+
     if (image) {
       const uploadedFile = await UploadManager.uploadFile(authUser!.username, image, ['image'])
 
-      fieldsToUpdate = {
-        [isCover ? 'coverImage' : 'image']: uploadedFile.fileAddress,
-        [isCover ? 'coverImagePublicId' : 'imagePublicId']: uploadedFile.filePublicId,
-      }
-
-      if (userFound[isCover ? 'coverImage' : 'image']) {
-        UploadManager.removeUploadedFile('image', userFound[isCover ? 'coverImage' : 'image']!)
-      }
+      userFound[isCover ? 'coverImage' : 'image'] = uploadedFile.fileAddress
+      userFound[isCover ? 'coverImagePublicId' : 'imagePublicId'] = uploadedFile.filePublicId
     } else {
-      fieldsToUpdate = {
-        [isCover ? 'coverImage' : 'image']: undefined,
-        [isCover ? 'coverImagePublicId' : 'imagePublicId']: undefined,
-      }
-
-      if (userFound && userFound[isCover ? 'coverImage' : 'image']) {
-        UploadManager.removeUploadedFile('image', userFound[isCover ? 'coverImage' : 'image']!)
-      }
+      userFound[isCover ? 'coverImage' : 'image'] = undefined
+      userFound[isCover ? 'coverImagePublicId' : 'imagePublicId'] = undefined
     }
 
-    const updatedUser = await User.findByIdAndUpdate(authUser!.id, { $set: fieldsToUpdate }, { new: true })
-
-    return updatedUser
+    return await userFound.save()
   },
 }
