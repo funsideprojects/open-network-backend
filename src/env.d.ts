@@ -7,10 +7,6 @@ declare global {
 
       LOG_TYPE?: '0' | '1' | '2' | '3' | '4'
 
-      // IMAGES_UPLOAD_DIR='./uploads/images'
-      // VIDEOS_UPLOAD_DIR='./uploads/videos'
-      // AUDIOS_UPLOAD_DIR='./uploads/audios'
-
       // PM2_LOG_DIR='./logs'
       // PM2_LOGS_FILENAME='console.log'
 

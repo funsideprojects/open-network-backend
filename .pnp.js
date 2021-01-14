@@ -41,6 +41,8 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@graphql-tools/merge", "virtual:f9e64c7523d4c7bad3541eb8a738b46e89146761856cd56d5e6239055755fbf53e5e80d48a68dffb95eba492155336c6ebb236ba05ba1fef521b994bdf19fd8a#npm:6.2.6"],
             ["@types/bcryptjs", "npm:2.4.2"],
             ["@types/cookie-parser", "npm:1.4.2"],
+            ["@types/cors", "npm:2.8.9"],
+            ["@types/express", "npm:4.17.9"],
             ["@types/graphql-upload", "npm:8.0.4"],
             ["@types/jsonwebtoken", "npm:8.5.0"],
             ["@types/lodash", "npm:4.14.165"],
@@ -56,6 +58,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["chalk", "npm:4.1.0"],
             ["cloudinary", "npm:1.23.0"],
             ["cookie-parser", "npm:1.4.5"],
+            ["cors", "npm:2.8.5"],
             ["dotenv", "npm:8.2.0"],
             ["express", "npm:4.17.1"],
             ["graphql", "npm:15.4.0"],
@@ -2068,6 +2071,13 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageDependencies": [
             ["@types/cors", "npm:2.8.8"],
             ["@types/express", "npm:4.17.9"]
+          ],
+          "linkType": "HARD",
+        }],
+        ["npm:2.8.9", {
+          "packageLocation": "./.yarn/cache/@types-cors-npm-2.8.9-758483771f-903e863c91.zip/node_modules/@types/cors/",
+          "packageDependencies": [
+            ["@types/cors", "npm:2.8.9"]
           ],
           "linkType": "HARD",
         }]
@@ -6633,6 +6643,8 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@graphql-tools/merge", "virtual:f9e64c7523d4c7bad3541eb8a738b46e89146761856cd56d5e6239055755fbf53e5e80d48a68dffb95eba492155336c6ebb236ba05ba1fef521b994bdf19fd8a#npm:6.2.6"],
             ["@types/bcryptjs", "npm:2.4.2"],
             ["@types/cookie-parser", "npm:1.4.2"],
+            ["@types/cors", "npm:2.8.9"],
+            ["@types/express", "npm:4.17.9"],
             ["@types/graphql-upload", "npm:8.0.4"],
             ["@types/jsonwebtoken", "npm:8.5.0"],
             ["@types/lodash", "npm:4.14.165"],
@@ -6648,6 +6660,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["chalk", "npm:4.1.0"],
             ["cloudinary", "npm:1.23.0"],
             ["cookie-parser", "npm:1.4.5"],
+            ["cors", "npm:2.8.5"],
             ["dotenv", "npm:8.2.0"],
             ["express", "npm:4.17.1"],
             ["graphql", "npm:15.4.0"],

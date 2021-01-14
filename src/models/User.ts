@@ -84,6 +84,7 @@ const userSchema = new Schema(
     coverImagePublicId: String,
     statusQuote: {
       type: String,
+      maxlength: [150, 'Status quote length can not exceed 150 characters'],
       default: '',
     },
     visibleToEveryone: {

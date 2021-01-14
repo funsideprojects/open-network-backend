@@ -55,8 +55,10 @@ export async function mongooseConnect() {
       keepAliveInitialDelay: 1000 * 60 * 30, // ? 30 mins
     })
     .then(async () => {
-      // ? Update all user status
-      const now = new Date(Date.now() + serverTimezoneOffset)
-      await User.updateMany({ online: true }, { $set: { online: false, lastActiveAt: new Date() } })
+      // ? Update all user status when server restart
+      if (process.env.NODE_ENV === 'production') {
+        const now = new Date(Date.now() + serverTimezoneOffset)
+        await User.updateMany({ online: true }, { $set: { online: false, lastActiveAt: now } })
+      }
     })
 }

@@ -3,6 +3,7 @@ import { compare } from 'bcryptjs'
 import { ApolloError } from 'apollo-server'
 
 import { serverTimezoneOffset } from 'constants/Date'
+import { FileType } from 'constants/Upload'
 import { getRequestIP, getRequestUserAgent } from 'resolvers/functions'
 import { Mailer, UploadManager } from 'services'
 
@@ -60,6 +61,7 @@ export const Mutation = {
         })
         const cookieOptions: CookieOptions = {
           secure: process.env.NODE_ENV === 'production',
+          sameSite: true,
         }
 
         req.res.cookie(TokenTypes.Access, accessToken, { ...cookieOptions, maxAge: accessTokenMaxAge })
@@ -116,6 +118,7 @@ export const Mutation = {
       })
       const cookieOptions: CookieOptions = {
         secure: process.env.NODE_ENV === 'production',
+        sameSite: true,
       }
 
       req.res.cookie(TokenTypes.Access, accessToken, { ...cookieOptions, maxAge: accessTokenMaxAge })
@@ -306,14 +309,14 @@ export const Mutation = {
     }
 
     if (userFound && userFound[isCover ? 'coverImage' : 'image']) {
-      UploadManager.removeUploadedFile('image', userFound[isCover ? 'coverImage' : 'image']!)
+      UploadManager.removeUploadedFile(FileType.Image, userFound[isCover ? 'coverImage' : 'image']!)
     }
 
     if (image) {
-      const uploadedFile = await UploadManager.uploadFile(authUser!.username, image, ['image'])
+      const { filePath, filePublicId } = await UploadManager.uploadFile(authUser!.username, image, [FileType.Image])
 
-      userFound[isCover ? 'coverImage' : 'image'] = uploadedFile.fileAddress
-      userFound[isCover ? 'coverImagePublicId' : 'imagePublicId'] = uploadedFile.filePublicId
+      userFound[isCover ? 'coverImage' : 'image'] = filePath
+      userFound[isCover ? 'coverImagePublicId' : 'imagePublicId'] = filePublicId
     } else {
       userFound[isCover ? 'coverImage' : 'image'] = undefined
       userFound[isCover ? 'coverImagePublicId' : 'imagePublicId'] = undefined

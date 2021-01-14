@@ -1,14 +1,13 @@
 import 'dotenv/config'
-import express from 'express'
 import { createServer } from 'http'
-import cookieParser from 'cookie-parser'
 // import cluster from 'cluster'
 // import { cpus } from 'os'
 
 import { Logger, NetWorkManager } from 'services'
-import { hl } from 'utils'
+import { hl, getCorsOrigin } from 'utils'
 
 import { createApolloServer } from '_apollo-server'
+import { createApplication } from '_express'
 import { mongooseConnect } from '_mongoose'
 
 // * Process events
@@ -22,18 +21,7 @@ async function main() {
   await mongooseConnect()
 
   // * Initialize application
-  const app = express()
-
-  // ? Static
-  if (process.env.NODE_ENV === 'development') {
-    app.use(express.static('uploads'))
-  }
-
-  // ? Cookie
-  app.use(cookieParser())
-
-  // ? Hide X-Powered-By in response headers
-  app.disable('x-powered-by')
+  const app = createApplication()
 
   // ? Apollo Server
   const graphqlPath = '/gql'
@@ -43,7 +31,7 @@ async function main() {
     path: graphqlPath,
     cors: {
       credentials: true,
-      origin: process.env.CORS_ORIGIN ?? true,
+      origin: getCorsOrigin(),
     },
   })
 

@@ -24,6 +24,7 @@ export class AuthDirective extends SchemaDirectiveVisitor {
         context.req.res.cookie(TokenTypes.Access, accessToken, {
           maxAge: accessTokenMaxAge,
           secure: process.env.NODE_ENV === 'production',
+          sameSite: true,
         })
 
         return { id, username, fullName }
