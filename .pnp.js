@@ -1749,7 +1749,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["eventsource", "npm:1.0.7"],
             ["extract-files", "npm:9.0.0"],
             ["graphql", "npm:15.4.0"],
-            ["graphql-upload", "virtual:dc94500afbf344918d18b1fa3612529f76d164c65c03128f97206af1ea81721094224d7a054f2e01ea704deb8ff2b981b8251e5b8abcd3f34289a83d846e3673#npm:11.0.0"],
+            ["graphql-upload", "virtual:1d39137309297dd10966fcad53ccf9d6c42ef39e941f04c7025e6610c5cff6f55dc6d5a0f81703ead44ddb74eb6a1523dbeae48fb988dbb21527c36f093cd33d#npm:11.0.0"],
             ["graphql-ws", "virtual:dc94500afbf344918d18b1fa3612529f76d164c65c03128f97206af1ea81721094224d7a054f2e01ea704deb8ff2b981b8251e5b8abcd3f34289a83d846e3673#npm:3.1.0"],
             ["is-promise", "npm:4.0.0"],
             ["isomorphic-form-data", "npm:2.0.0"],
@@ -2741,7 +2741,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["graphql-extensions", "virtual:1d39137309297dd10966fcad53ccf9d6c42ef39e941f04c7025e6610c5cff6f55dc6d5a0f81703ead44ddb74eb6a1523dbeae48fb988dbb21527c36f093cd33d#npm:0.12.6"],
             ["graphql-tag", "virtual:1d39137309297dd10966fcad53ccf9d6c42ef39e941f04c7025e6610c5cff6f55dc6d5a0f81703ead44ddb74eb6a1523dbeae48fb988dbb21527c36f093cd33d#npm:2.11.0"],
             ["graphql-tools", "virtual:e0e71851b2f47e845e1e76bb584c5e933cb3637133181cfdabad513ffc1eb8f400fa363b2d9a3d60cfd12f1b83411feddd72b65abe180ab68229c71b6927d146#npm:4.0.8"],
-            ["graphql-upload", "virtual:1d39137309297dd10966fcad53ccf9d6c42ef39e941f04c7025e6610c5cff6f55dc6d5a0f81703ead44ddb74eb6a1523dbeae48fb988dbb21527c36f093cd33d#npm:8.1.0"],
+            ["graphql-upload", "virtual:1d39137309297dd10966fcad53ccf9d6c42ef39e941f04c7025e6610c5cff6f55dc6d5a0f81703ead44ddb74eb6a1523dbeae48fb988dbb21527c36f093cd33d#npm:11.0.0"],
             ["loglevel", "npm:1.7.1"],
             ["lru-cache", "npm:5.1.1"],
             ["sha.js", "npm:2.4.11"],
@@ -4587,13 +4587,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
         }]
       ]],
       ["fs-capacitor", [
-        ["npm:2.0.4", {
-          "packageLocation": "./.yarn/cache/fs-capacitor-npm-2.0.4-344fd25807-08b70847be.zip/node_modules/fs-capacitor/",
-          "packageDependencies": [
-            ["fs-capacitor", "npm:2.0.4"]
-          ],
-          "linkType": "HARD",
-        }],
         ["npm:6.2.0", {
           "packageLocation": "./.yarn/cache/fs-capacitor-npm-6.2.0-9582572fc3-015a34427d.zip/node_modules/fs-capacitor/",
           "packageDependencies": [
@@ -4999,34 +4992,10 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           ],
           "linkType": "SOFT",
         }],
-        ["npm:8.1.0", {
-          "packageLocation": "./.yarn/cache/graphql-upload-npm-8.1.0-c7d3bd9b21-e5fa68b3eb.zip/node_modules/graphql-upload/",
+        ["virtual:1d39137309297dd10966fcad53ccf9d6c42ef39e941f04c7025e6610c5cff6f55dc6d5a0f81703ead44ddb74eb6a1523dbeae48fb988dbb21527c36f093cd33d#npm:11.0.0", {
+          "packageLocation": "./.yarn/$$virtual/graphql-upload-virtual-79820fcf3c/0/cache/graphql-upload-npm-11.0.0-287d4d5940-0765222c1e.zip/node_modules/graphql-upload/",
           "packageDependencies": [
-            ["graphql-upload", "npm:8.1.0"]
-          ],
-          "linkType": "SOFT",
-        }],
-        ["virtual:1d39137309297dd10966fcad53ccf9d6c42ef39e941f04c7025e6610c5cff6f55dc6d5a0f81703ead44ddb74eb6a1523dbeae48fb988dbb21527c36f093cd33d#npm:8.1.0", {
-          "packageLocation": "./.yarn/$$virtual/graphql-upload-virtual-54eda7e333/0/cache/graphql-upload-npm-8.1.0-c7d3bd9b21-e5fa68b3eb.zip/node_modules/graphql-upload/",
-          "packageDependencies": [
-            ["graphql-upload", "virtual:1d39137309297dd10966fcad53ccf9d6c42ef39e941f04c7025e6610c5cff6f55dc6d5a0f81703ead44ddb74eb6a1523dbeae48fb988dbb21527c36f093cd33d#npm:8.1.0"],
-            ["@types/graphql", null],
-            ["busboy", "npm:0.3.1"],
-            ["fs-capacitor", "npm:2.0.4"],
-            ["graphql", "npm:15.4.0"],
-            ["http-errors", "npm:1.8.0"],
-            ["object-path", "npm:0.11.5"]
-          ],
-          "packagePeers": [
-            "@types/graphql",
-            "graphql"
-          ],
-          "linkType": "HARD",
-        }],
-        ["virtual:dc94500afbf344918d18b1fa3612529f76d164c65c03128f97206af1ea81721094224d7a054f2e01ea704deb8ff2b981b8251e5b8abcd3f34289a83d846e3673#npm:11.0.0", {
-          "packageLocation": "./.yarn/$$virtual/graphql-upload-virtual-282b230ed7/0/cache/graphql-upload-npm-11.0.0-287d4d5940-0765222c1e.zip/node_modules/graphql-upload/",
-          "packageDependencies": [
-            ["graphql-upload", "virtual:dc94500afbf344918d18b1fa3612529f76d164c65c03128f97206af1ea81721094224d7a054f2e01ea704deb8ff2b981b8251e5b8abcd3f34289a83d846e3673#npm:11.0.0"],
+            ["graphql-upload", "virtual:1d39137309297dd10966fcad53ccf9d6c42ef39e941f04c7025e6610c5cff6f55dc6d5a0f81703ead44ddb74eb6a1523dbeae48fb988dbb21527c36f093cd33d#npm:11.0.0"],
             ["@types/graphql", null],
             ["busboy", "npm:0.3.1"],
             ["fs-capacitor", "npm:6.2.0"],

@@ -2,6 +2,7 @@ import { CookieOptions } from 'express'
 import { compare } from 'bcryptjs'
 import { ApolloError } from 'apollo-server'
 
+import { baseCookieOptions } from 'constants/Cookie'
 import { serverTimezoneOffset } from 'constants/Date'
 import { FileType } from 'constants/Upload'
 import { getRequestIP, getRequestUserAgent } from 'resolvers/functions'
@@ -59,14 +60,10 @@ export const Mutation = {
           type: TokenTypes.Refresh,
           payload: { ...user, ip: getRequestIP(req), userAgent: getRequestUserAgent(req) },
         })
-        const cookieOptions: CookieOptions = {
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: true,
-        }
 
-        req.res.cookie(TokenTypes.Access, accessToken, { ...cookieOptions, maxAge: accessTokenMaxAge })
+        req.res.cookie(TokenTypes.Access, accessToken, { ...baseCookieOptions, maxAge: accessTokenMaxAge })
         req.res.cookie(TokenTypes.Refresh, refreshToken, {
-          ...cookieOptions,
+          ...baseCookieOptions,
           httpOnly: true,
           maxAge: refreshTokenMaxAge,
         })
@@ -116,13 +113,13 @@ export const Mutation = {
         type: TokenTypes.Refresh,
         payload: { ...user, ip: getRequestIP(req), userAgent: getRequestUserAgent(req) },
       })
-      const cookieOptions: CookieOptions = {
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: true,
-      }
 
-      req.res.cookie(TokenTypes.Access, accessToken, { ...cookieOptions, maxAge: accessTokenMaxAge })
-      req.res.cookie(TokenTypes.Refresh, refreshToken, { ...cookieOptions, httpOnly: true, maxAge: refreshTokenMaxAge })
+      req.res.cookie(TokenTypes.Access, accessToken, { ...baseCookieOptions, maxAge: accessTokenMaxAge })
+      req.res.cookie(TokenTypes.Refresh, refreshToken, {
+        ...baseCookieOptions,
+        httpOnly: true,
+        maxAge: refreshTokenMaxAge,
+      })
 
       return true
     } catch (error) {

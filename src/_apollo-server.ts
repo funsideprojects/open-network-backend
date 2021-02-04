@@ -83,12 +83,12 @@ export function createApolloServer(graphqlPath: string) {
     formatError: (error) => {
       const errorCode = error.extensions?.code
 
-      // Logger.debug(
-      //   `[Apollo Server]\r\n`,
-      //   `[${error.path}]: {\r\n`,
-      //   ` Code: ${errorCode || 'unknown'},\r\n `,
-      //   hl.error(error.extensions?.exception?.stacktrace.join('\r\n'))
-      // )
+      Logger.debug(
+        `[Apollo Server]\r\n`,
+        `[${error.path}]: {\r\n`,
+        ` Code: ${errorCode || 'unknown'},\r\n `,
+        hl.error(error.extensions?.exception?.stacktrace.join('\r\n'))
+      )
 
       if (errorCode === 'INTERNAL_SERVER_ERROR') {
         if (mongooseConnection.readyState === ConnectionStates.disconnected) {

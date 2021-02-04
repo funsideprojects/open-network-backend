@@ -150,7 +150,7 @@ userSchema.pre<IUser>('save', function (next) {
 })
 
 userSchema.post<IUser>('findOne', (doc, next) => {
-  if (!doc.displayOnlineStatus) {
+  if (doc && !doc.displayOnlineStatus) {
     doc.online = false
   }
 

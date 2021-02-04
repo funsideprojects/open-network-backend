@@ -1,6 +1,8 @@
 import { SchemaDirectiveVisitor, ApolloError } from 'apollo-server'
 import { GraphQLField, defaultFieldResolver } from 'graphql'
 
+import { baseCookieOptions } from 'constants/Cookie'
+
 import { IContext } from '_apollo-server'
 import { TokenTypes, UserPayload, verifyToken, generateToken, accessTokenMaxAge } from '_jsonwebtoken'
 
@@ -23,8 +25,7 @@ export class AuthDirective extends SchemaDirectiveVisitor {
 
         context.req.res.cookie(TokenTypes.Access, accessToken, {
           maxAge: accessTokenMaxAge,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: true,
+          ...baseCookieOptions,
         })
 
         return { id, username, fullName }
