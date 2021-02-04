@@ -1,4 +1,4 @@
-# API for Prism Social Network using Node, GraphQL and MongoDB
+# API for Open Network using Node, GraphQL and MongoDB
 
 ## Development
 
